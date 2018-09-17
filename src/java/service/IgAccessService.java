@@ -23,6 +23,7 @@ import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
+import trading.OAuthToken;
 import trading.Session;
 
 /**
@@ -102,11 +103,11 @@ public class IgAccessService {
             session.setClientId(sessionJson.getJsonString("clientId").getString());
             session.setTimezoneOffset(sessionJson.getJsonNumber("timezoneOffset").doubleValue());
             session.setLightStreamerEndpoint(sessionJson.getJsonString("lightstreamerEndpoint").getString());
-            session.setAccess_token(sessionJson.getJsonObject("oauthToken").getJsonString("access_token").getString());
-            session.setExpires_in(sessionJson.getJsonObject("oauthToken").getJsonString("expires_in").getString());
-            session.setRefresh_token(sessionJson.getJsonObject("oauthToken").getJsonString("refresh_token").getString());
-            session.setScope(sessionJson.getJsonObject("oauthToken").getJsonString("scope").getString());
-            session.setToken_type(sessionJson.getJsonObject("oauthToken").getJsonString("token_type").getString());
+            session.setOauthToken(new OAuthToken(sessionJson.getJsonObject("oauthToken").getJsonString("access_token").getString(),
+                    sessionJson.getJsonObject("oauthToken").getJsonString("refresh_token").getString(),
+                    sessionJson.getJsonObject("oauthToken").getJsonString("scope").getString(),
+                    sessionJson.getJsonObject("oauthToken").getJsonString("token_type").getString(),
+                    sessionJson.getJsonObject("oauthToken").getJsonString("expires_in").getString()));
         }
         
         return session;
@@ -152,5 +153,7 @@ public class IgAccessService {
             if(connection!=null){connection.disconnect();}
         }
     }
+    
+    public void get(){}
     
 }
