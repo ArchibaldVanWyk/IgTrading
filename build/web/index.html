@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div>TODO write content</div>
+        <form action="ig" method="get">
+            in form
+        </form>
+        <script>
+            xhr = new XMLHttpRequest();
+            xhr.open("GET","http://localhost:8080/IgTrading/webresources/ig",true);
+            xhr.onreadystatechange=function(){
+                if(xhr.readyState===4){
+                    document.write(xhr.responseText);
+                }
+                
+            };
+            document.write("readyState "+xhr.readyState+"<br/>");
+            document.write("Status text "+xhr.statusText);
+        </script>
+    </body>
+</html>
