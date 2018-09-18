@@ -120,7 +120,6 @@ public class IgAccessService {
         StringBuilder responseString = new StringBuilder("");
         String key;
         String baseUrl;
-        JsonObject sessionJson = null;
         try(FileReader propsFile=new FileReader("../trading/properties/IgRest-api.properties");
             FileReader propVersionRdr = new FileReader("../trading/properties/IgRest-api-versions.properties"))
         {
@@ -154,6 +153,13 @@ public class IgAccessService {
         }
     }
     
-    public void get(){}
+    public void get(){
+        
+        session.setAccountId(sessionJson.getJsonString("accountId").getString());
+        session.setClientId(sessionJson.getJsonString("clientId").getString());
+        session.setTimezoneOffset(sessionJson.getJsonNumber("timezoneOffset").doubleValue());
+        session.setLightStreamerEndpoint(sessionJson.getJsonString("lightstreamerEndpoint").getString());
+        
+    }
     
 }
