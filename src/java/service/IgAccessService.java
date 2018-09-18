@@ -155,10 +155,10 @@ public class IgAccessService {
     
     public void get(){
         
-        session.setAccountId(sessionJson.getJsonString("accountId").getString());
-        session.setClientId(sessionJson.getJsonString("clientId").getString());
-        session.setTimezoneOffset(sessionJson.getJsonNumber("timezoneOffset").doubleValue());
-        session.setLightStreamerEndpoint(sessionJson.getJsonString("lightstreamerEndpoint").getString());
+//        session.setAccountId(sessionJson.getJsonString("accountId").getString());
+//        session.setClientId(sessionJson.getJsonString("clientId").getString());
+//        session.setTimezoneOffset(sessionJson.getJsonNumber("timezoneOffset").doubleValue());
+//        session.setLightStreamerEndpoint(sessionJson.getJsonString("lightstreamerEndpoint").getString());
         
     }
     
