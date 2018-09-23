@@ -56,22 +56,9 @@ public class IgAccessService {
     public void logout(){
         String method ="DELETE";
         String enpoint = "session";
-        StringBuilder responseString =new StringBuilder("");
         HttpURLConnection connection=cm.createConnection(method, enpoint);
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-            connection.connect();
-            String output;
-            while ((output = br.readLine()) != null) {
-                responseString.append(output);
-            }
-            if(responseString.length()>1){System.out.println(responseString.toString());}
-        } catch (IOException ex) {
-            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        finally{
-            connection.disconnect();
-        }
-        System.out.println(responseString);
+        JsonObject json = cm.send(null, connection);
+        System.out.println(json);
     }
     
     public void get(){

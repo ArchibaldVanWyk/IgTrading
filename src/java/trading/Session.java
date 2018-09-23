@@ -7,13 +7,22 @@ package trading;
 
 import java.io.Serializable;
 import javax.enterprise.context.SessionScoped;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 
 /**
  *
  * @author Archie
  */
 @SessionScoped
+@Entity
 public class Session implements Serializable{
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
     
     private String accountId;
     private String clientId;
@@ -95,6 +104,14 @@ public class Session implements Serializable{
 
     public void setTimezoneOffset(double timezoneOffset) {
         this.timezoneOffset = timezoneOffset;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
     
     
