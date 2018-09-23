@@ -7,6 +7,7 @@ package trading;
 
 import java.io.Serializable;
 import javax.enterprise.context.SessionScoped;
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -32,6 +33,7 @@ public class Session implements Serializable{
     private double timezoneOffset;
     private String encryptionKey;
     private long timeStamp;
+    @Embedded
     private OAuthToken oauthToken;
 
     public OAuthToken getOauthToken() {

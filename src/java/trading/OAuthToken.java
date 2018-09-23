@@ -5,6 +5,7 @@
  */
 package trading;
 
+import java.io.Serializable;
 import javax.persistence.Embeddable;
 
 /**
@@ -12,8 +13,8 @@ import javax.persistence.Embeddable;
  * @author Archie
  * 
  */
-
-public class OAuthToken {
+@Embeddable
+public class OAuthToken implements Serializable{
     private String access_token;
     private String refresh_token;
     private String scope;
