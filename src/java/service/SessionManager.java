@@ -26,6 +26,7 @@ public class SessionManager {
     public synchronized boolean hasSession(Long accountId){
         return SESSIONS.containsKey(accountId);
     }
+    //retrieve the last session addedd/created
     public Session retrieveSession(JsonObject sessionJson){
         Session session;
         long id = Long.parseLong(sessionJson.getJsonString("accountId").getString());

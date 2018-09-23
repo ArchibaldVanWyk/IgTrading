@@ -76,6 +76,7 @@ public class ConnectionManager {
             OutputStream out = connection.getOutputStream();
             ) {
             String output;
+            connection.connect();
             if(body!=null){
                 out.write(body.getBytes());
                 out.flush();
