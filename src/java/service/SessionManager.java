@@ -26,6 +26,17 @@ public class SessionManager {
     public synchronized boolean hasSession(Long accountId){
         return SESSIONS.containsKey(accountId);
     }
+    public Session retrieveSession(JsonObject sessionJson){
+        Session session;
+        long id = Long.parseLong(sessionJson.getJsonString("accountId").getString());
+        if(hasSession(id)&&SESSIONS.get(id).size()>0){
+            session=SESSIONS.get(id).get(SESSIONS.get(id).size()-1);
+        }
+        else{
+            session=createSession(sessionJson);
+        }
+        return session;
+    }
     public Session createSession(JsonObject sessionJson){
         Session session=null;
         if(sessionJson!=null){

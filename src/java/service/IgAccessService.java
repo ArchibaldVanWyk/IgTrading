@@ -61,14 +61,11 @@ public class IgAccessService {
         System.out.println(json);
     }
     
-    public void get(){
-        JsonObject sessionJson = null;
-        
-        session.setAccountId(sessionJson.getJsonString("accountId").getString());
-        session.setClientId(sessionJson.getJsonString("clientId").getString());
-        session.setTimezoneOffset(sessionJson.getJsonNumber("timezoneOffset").doubleValue());
-        session.setLightStreamerEndpoint(sessionJson.getJsonString("lightstreamerEndpoint").getString());
-        
+    public Session getSession(){
+        String method = "GET";
+        String endpoint ="session";
+        HttpURLConnection connection=cm.createConnection(method, endpoint);
+        return sm.retrieveSession(cm.send(null, connection));
     }
     
 
