@@ -27,8 +27,10 @@ var ig = (function(){
                 }
             };
             xhr.open(method,url);
-            xhr.setRequestHeader("Content-Type", "application/json");
-            xhr.setRequestHeader("Accept", "application/json");
+//            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.setRequestHeader("Content-Type", "text/plain");
+//            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("Accept", "text/plain");
             return xhr;
         },
         login:function(){
