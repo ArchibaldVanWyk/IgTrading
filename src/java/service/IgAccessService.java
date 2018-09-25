@@ -48,20 +48,21 @@ public class IgAccessService {
     public String login(String username,String password){
         String method = "POST";
         String endpoint ="/session";
-        HttpURLConnection connection=cm.createConnection(method, endpoint);
-        if(connection==null){throw new RuntimeException("connection in null");}
-        String sessionJson = cm.send("{\"identifier\":+"+"\""+username+"\","+"password:"+"\""+password+"\"}",
-                connection);        
+        
+        String sessionJson=cm.createConnection(method, endpoint);
+//        if(connection==null){throw new RuntimeException("connection in null");}
+//        String sessionJson = cm.send("{\"identifier\":+"+"\""+username+"\","+"password:"+"\""+password+"\"}",
+//                connection);        
         return sessionJson;
     }
     
-    public void logout(){
-        String method ="DELETE";
-        String enpoint = "/session";
-        HttpURLConnection connection=cm.createConnection(method, enpoint);
-        String json = cm.send(null, connection);
-        System.out.println(json);
-    }
+//    public void logout(){
+//        String method ="DELETE";
+//        String enpoint = "/session";
+//        HttpURLConnection connection=cm.createConnection(method, enpoint);
+//        String json = cm.send(null, connection);
+//        System.out.println(json);
+//    }
     
 //    public Session getSession(){
 //        String method = "GET";
