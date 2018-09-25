@@ -13,7 +13,7 @@ and open the template in the editor.
     </head>
     <body>
         <div>TODO write content</div>
-        <button onclick="getFace()">Main Face</button><br/>
+        <button onclick="ig.getFace()">Main Face</button><br/>
         <hr/>
         <table>
             <tr>
@@ -24,9 +24,10 @@ and open the template in the editor.
             </tr>
             <tr>
                 <td colspan="2" style="align-content: center">
-                    <input type="submit" value="LOG IN" name="login" style="width: 100%"/>
+                    <input type="submit" value="LOG IN" name="login" onclick="ig.login()" style="width: 100%"/>
                 </td>
             </tr>
         </table>
+        <div id="output"></div>
     </body>
 </html>

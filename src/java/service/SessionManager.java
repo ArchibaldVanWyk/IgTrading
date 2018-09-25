@@ -52,6 +52,9 @@ public class SessionManager {
                     sessionJson.getJsonObject("oauthToken").getJsonString("token_type").getString(),
                     sessionJson.getJsonObject("oauthToken").getJsonString("expires_in").getString()));
         }
+        else{
+            throw new RuntimeException("The funcking sessionJson is null");
+        }
         return session;
     }
     public HashMap<Long, List<Session>> getSessions() {

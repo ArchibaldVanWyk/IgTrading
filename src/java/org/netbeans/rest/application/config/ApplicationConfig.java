@@ -33,6 +33,7 @@ public class ApplicationConfig extends Application {
         resources.add(service.ActivityFacadeREST.class);
         resources.add(service.BalanceFacadeREST.class);
         resources.add(service.ClienActionFacadeREST.class);
+        resources.add(service.IgAccessService.class);
         resources.add(service.TradeFacadeREST.class);
     }
     

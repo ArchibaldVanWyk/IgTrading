@@ -9,10 +9,13 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,59 +44,63 @@ public class ConnectionManager {
         HttpURLConnection connection = null;
         String key;
         String baseUrl;
-        try(FileReader propsFile=new FileReader("../trading/properties/IgRest-api.properties");
-            FileReader propVersionRdr = new FileReader("../trading/properties/IgRest-api-versions.properties")){
+        String fileStatus="NOT FOUND";
+        try(FileReader propsFile=new FileReader("/GitRepositories/IgTrading\\properties/IgRest-api.properties");
+            FileReader propVersionRdr = new FileReader("/GitRepositories/IgTrading\\properties/IgRest-api-versions.properties")){
+            fileStatus="FILES WERE FOUND";
             props.load(propsFile);
             propsVersions.load(propVersionRdr);
             key=props.getProperty("header.X-IG-API-KEY");
-            baseUrl=props.getProperty("base-url");
-            connection =(HttpURLConnection)(new URL(baseUrl+props.getProperty(endpoint))).openConnection();
-            if (connection.getResponseCode() != HttpURLConnection.HTTP_CREATED) {
-                throw new RuntimeException("Failed : HTTP error code : "+ connection.getResponseCode());
-            }
-            connection.setDoOutput(true);
-            connection.setDoInput(true);
+            baseUrl=props.getProperty("base-url");//new URL(baseUrl+props.getProperty(endpoint))
+            connection =(HttpURLConnection)(new URL("https://demo-api.ig.com/gateway/deal/session")).openConnection();
             connection.setRequestMethod(method.toUpperCase().trim());
             connection.setRequestProperty("X-IG-API-KEY", key);
-            connection.setRequestProperty("VERSION", propsVersions.getProperty(endpoint.replace('/', '.').replace("{","").replace("{","")+"."+method.toUpperCase().trim(),"3"));
+            connection.setRequestProperty("VERSION", propsVersions.getProperty(endpoint.replace('/', '.').replace("{","").replace("{","")+"."+method.toUpperCase().trim().substring(1)));
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Accept", "application/json");
-            
+//            if (connection.getResponseCode() != HttpURLConnection.HTTP_CREATED) {
+//                throw new RuntimeException("Failed : HTTP error code : "+ connection.getResponseCode()+" "+connection.getResponseMessage());
+//            }
         } catch (FileNotFoundException ex) {
             Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
         }
-        CONNECTIONS.put(endpoint, new ArrayList<>(3));
-        CONNECTIONS.get(endpoint).set(0, connection);
+//        CONNECTIONS.put(endpoint, new ArrayList<>(3));
+//        CONNECTIONS.get(endpoint).set(0, connection);
+        Logger.getLogger(IgAccessService.class.getName()+" "+fileStatus).log(Level.INFO, null, fileStatus);
         return connection;
     }
     
-    public JsonObject send(String body,HttpURLConnection connection){
+    public String send(String body,HttpURLConnection connection){
         StringBuilder responseString = new StringBuilder("");
         JsonObject json = null;
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            OutputStream out = connection.getOutputStream();
-            ) {
-            String output;
-            connection.connect();
+        Object content="";
+        if(connection==null){throw new RuntimeException("Connection is Null");}
+        
+        if(!connection.getDoOutput()){connection.setDoOutput(true);}
+        try (OutputStream out = connection.getOutputStream();)
+        {
+            int output;
             if(body!=null){
                 out.write(body.getBytes());
                 out.flush();
             }
-            while (br.ready()&&(output = br.readLine()) != null) {
-                responseString.append(output);
+            if(!connection.getDoInput()){connection.setDoInput(true);}
+            try (InputStream br = connection.getInputStream()) {
+                while ((output = br.read()) != -1) {
+                    responseString.append((char)output);
+                }
             }
-            try(JsonReader jsonReader = Json.createReader(new StringReader(responseString.toString()))){
-                json = jsonReader.readObject();
-            }
+            
         } catch (IOException ex) {
-            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex.getMessage());
         }
         finally{
             connection.disconnect();//manage connections a different way
         }
-        return json;
+        
+        return responseString.toString();
     }
     
     public HashMap<String,List<HttpURLConnection>> getConnections() {
