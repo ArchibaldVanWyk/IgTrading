@@ -38,21 +38,8 @@ public class IgAccessService {
     @Consumes({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String login(String jsonString){
-        System.out.println("invoked login");
         JsonObject json = Json.createReader(new StringReader(jsonString)).readObject();
-        String session = this.login(json.getString("identifier"), json.getString("password"));
-        if(session==null){throw new RuntimeException("Session in null");}
-        return session;
-    }
-    
-    public String login(String username,String password){
-        String method = "POST";
-        String endpoint ="/session";
-        
-        String sessionJson=cm.createConnection(method, endpoint);
-//        if(connection==null){throw new RuntimeException("connection in null");}
-//        String sessionJson = cm.send("{\"identifier\":+"+"\""+username+"\","+"password:"+"\""+password+"\"}",
-//                connection);        
+        String sessionJson=cm.createConnection("POST","/session",json);
         return sessionJson;
     }
     
