@@ -6,19 +6,18 @@
 package service;
 
 import java.io.StringReader;
-import java.net.HttpURLConnection;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
-import javax.json.stream.JsonParser;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import trading.OAuthToken;
 import trading.Session;
 
 /**
@@ -29,8 +28,11 @@ import trading.Session;
 @Path("/rest")
 public class IgAccessService {
     
-    @Inject SessionManager sm;
+
     @Inject ConnectionManager cm;
+    @Inject SessionManager sm;
+    @PersistenceContext(unitName = "IgTradingPU")
+    private EntityManager em;
     //Login with username and password and get Session object with oauth token
 
     @POST
@@ -39,25 +41,31 @@ public class IgAccessService {
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String login(String jsonString){
         JsonObject json = Json.createReader(new StringReader(jsonString)).readObject();
+        if(json==null){throw new RuntimeException("no json created");}
         String sessionJson=cm.createConnection("POST","/session",json);
+        if(sessionJson.length()<2){throw new RuntimeException("no sessionJson");}
+        Session session = sm.createSession(Json.createReader(new StringReader(sessionJson)).readObject());
+        //em.persist(session);
+        sm.getSessions().clear();
+        sm.getSessions().put(session.getAccountId(), session);
         return sessionJson;
     }
     
-//    public void logout(){
-//        String method ="DELETE";
-//        String enpoint = "/session";
-//        HttpURLConnection connection=cm.createConnection(method, enpoint);
-//        String json = cm.send(null, connection);
-//        System.out.println(json);
-//    }
+    @POST
+    @Path("logout")
+    @Consumes({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String logout(String jsonString){
+        String res=cm.createConnection("DELETE","/session",null);
+        return res==null?"logged out":res;
+    }
     
-//    public Session getSession(){
-//        String method = "GET";
-//        String endpoint ="/session";
-//        HttpURLConnection connection=cm.createConnection(method, endpoint);
-//        String json = cm.send(null, connection);
-//        return sm.retrieveSession(json);
-//    }
+    public Session getSession(){
+        String method = "GET";
+        String endpoint ="/session";
+        String json=cm.createConnection(method,endpoint,null);
+        return sm.retrieveSession(Json.createReader(new StringReader(json)).readObject());
+    }
     
 //    public String getEncryptionKey(){
 //        String endpoint ="/session/encryptionKey";
@@ -81,6 +89,22 @@ public class IgAccessService {
 //        auth.setScope(json.getString("scope"));
 //        auth.setToken_type(json.getString("token_type"));
 //    }
+    @GET
+    @Path("marketnavigation")
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String marketNavigation(String in){
+        String resp = cm.createConnection("GET", "/positions", null);
+        if(resp==null||resp.length()<3){resp="no data";}
+        return resp;
+    }
+    @GET
+    @Path("token")
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String token(){
+        String resp = cm.token();
+        if(resp==null||resp.length()<3){resp="no data";}
+        return resp;
+    }
     
     
 }
