@@ -17,15 +17,38 @@ and open the template in the editor.
         <hr/>
         <table>
             <tr>
-                <td>Username:</td><td><input type="text" name="username" value="username" size="10" /></td>
+                <td>Username:</td><td><input id='username' type="text" name="username" value="username" size="10" /></td>
             </tr>
             <tr>
-                <td>Password:</td><td><input type="password" name="password" value="password" size="10" /></td>
+                <td>Password:</td><td><input id='password' type="password" name="password" value="password" size="10" /></td>
             </tr>
             <tr>
-                <td colspan="2" style="align-content: center">
+                <td style="align-content: center">
                     <input type="submit" value="LOG IN" name="login" onclick="ig.login()" style="width: 100%"/>
                 </td>
+                <td style="align-content: center">
+                    <input type="submit" value="LOG OUT" name="logout" onclick="ig.logout()" style="width: 100%"/>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <input type="submit" value="Navigation" name="logout" onclick="ig.marketNav()" style="width: 100%"/>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <input type="submit" value="Token" name="token" onclick="ig.token()" style="width: 100%"/>
+                </td>
+            </tr>
+            <tr>
+               <td colspan="2">
+                    <input type="submit" value="Accounts" name="accounts" onclick="ig.accounts()" style="width: 100%"/>
+                </td> 
+            </tr>
+            <tr>
+               <td colspan="2">
+                    <input type="submit" value="Positions" name="positons" onclick="ig.positions()" style="width: 100%"/>
+                </td> 
             </tr>
         </table>
         <div id="output"></div>

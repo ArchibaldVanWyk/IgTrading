@@ -9,7 +9,9 @@ import java.io.StringReader;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.ws.rs.Consumes;
@@ -18,7 +20,12 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import trading.DealingRules;
+import trading.Instrument;
+import trading.Market;
+import trading.Position;
 import trading.Session;
+import trading.Snapshot;
 
 /**
  *
@@ -28,7 +35,7 @@ import trading.Session;
 @Path("/rest")
 public class IgAccessService {
     
-
+    @Inject Framework fw;
     @Inject ConnectionManager cm;
     @Inject SessionManager sm;
     @PersistenceContext(unitName = "IgTradingPU")
@@ -43,7 +50,7 @@ public class IgAccessService {
         JsonObject json = Json.createReader(new StringReader(jsonString)).readObject();
         if(json==null){throw new RuntimeException("no json created");}
         String sessionJson=cm.createConnection("POST","/session",json);
-        if(sessionJson.length()<2){throw new RuntimeException("no sessionJson");}
+        if(sessionJson==null||sessionJson.length()<2){throw new RuntimeException("no sessionJson");}
         Session session = sm.createSession(Json.createReader(new StringReader(sessionJson)).readObject());
         //em.persist(session);
         sm.getSessions().clear();
@@ -93,7 +100,7 @@ public class IgAccessService {
     @Path("marketnavigation")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String marketNavigation(String in){
-        String resp = cm.createConnection("GET", "/positions", null);
+        String resp = cm.createConnection("GET", "/marketnavigation", null);
         if(resp==null||resp.length()<3){resp="no data";}
         return resp;
     }
@@ -105,6 +112,35 @@ public class IgAccessService {
         if(resp==null||resp.length()<3){resp="no data";}
         return resp;
     }
-    
+    @GET
+    @Path("account")
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String accountInfo(){
+        String resp = cm.createConnection("GET", "/accounts", null);
+        if(resp==null||resp.length()<3){resp="no data";}
+        return resp;
+    }
+    @GET
+    @Path("positions")
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String positions(){
+        String resp = cm.createConnection("GET", "/positions", null);
+        JsonArray jsonArr = Json.createReader(new StringReader(resp)).readArray();
+        
+        for(int i=0;i<jsonArr.size();i++){
+            JsonObject obj = jsonArr.getJsonObject(i);
+            JsonObject mktjs = obj.getJsonObject("market");
+            JsonObject posjs = obj.getJsonObject("position");
+            Market market = new Market();
+            DealingRules rules = new DealingRules();
+            Instrument ins = new Instrument();
+            Snapshot ss = new Snapshot();
+            
+            
+        }
+        
+        if(resp==null||resp.length()<3){resp="no data";}
+        return resp;
+    }
     
 }

@@ -5,37 +5,40 @@
  */
 package service;
 
-import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.StringReader;
 import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.ejb.DependsOn;
 import javax.ejb.Singleton;
-import javax.json.Json;
+import javax.inject.Inject;
 import javax.json.JsonObject;
-import javax.json.JsonReader;
+import trading.Session;
 
 /**
  *
  * @author Archie
  */
-@Singleton
-public class ConnectionManager {
+@Singleton(name="connectionmanager")
+@DependsOn({"sessionManager"})
+public class ConnectionManager{
     
-    private static final HashMap<String,List<HttpURLConnection>> CONNECTIONS = new HashMap<>();
+    @Inject IgAccessService ig;
+    @Inject SessionManager sm;
+    private String AuthKey="";
+    private String cst ="";
+    private String x_security_token="";
+    
+    private final HashMap<String,List<HttpURLConnection>> CONNECTIONS = new HashMap<>();
     
     //return connection to specified endpoint for the method specified
     public String createConnection(String method,String endpoint,JsonObject json){
@@ -43,45 +46,102 @@ public class ConnectionManager {
         Properties propsVersions = new Properties();
         HttpURLConnection connection = null;
         String key;
+        String version;
         String baseUrl;
-        String fileStatus="NOT FOUND";
         String res=null;
         try(FileReader propsFile=new FileReader("/GitRepositories/IgTrading\\properties/IgRest-api.properties");
             FileReader propVersionRdr = new FileReader("/GitRepositories/IgTrading\\properties/IgRest-api-versions.properties")){
-            fileStatus="FILES WERE FOUND";
             props.load(propsFile);
             propsVersions.load(propVersionRdr);
             key=props.getProperty("header.X-IG-API-KEY");
-            baseUrl=props.getProperty("base-url");//new URL(baseUrl+props.getProperty(endpoint))
-            connection =(HttpURLConnection)(new URL("https://demo-api.ig.com/gateway/deal/session")).openConnection();
+            AuthKey=key;
+            baseUrl=props.getProperty("base-url");
+            String ep = endpoint;
+            if(baseUrl.endsWith("/")&&endpoint.startsWith("/")){ep=endpoint.substring(1);}
+//            if(ep.contains("marketnavigation")){ep=""+ep+"/668394";}
+            version=propsVersions.getProperty(endpoint.substring(1).replace('/', '.').replace("{", "").replace("}", "")+"."+method.trim().toUpperCase(),"1");
+            connection =(HttpURLConnection)(new URL(baseUrl+ep)).openConnection();
             connection.setRequestMethod(method.toUpperCase().trim());
             connection.setRequestProperty("X-IG-API-KEY", key);
-            connection.setRequestProperty("VERSION", "3");
+            connection.setRequestProperty("VERSION", version);
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Accept", "application/json");
+            boolean isLogin = "POST".equals(method.toUpperCase())&&"/session".equals(endpoint);
+            if(!isLogin){
+                Session session = sm.getSessions().values().stream().findFirst().get();
+                if(session==null){throw new RuntimeException("no session");}
+                connection.setRequestProperty("IG-ACCOUNT-ID", session.getAccountId());
+                connection.setRequestProperty("Authorization", session.getOauthToken().getAccess_token());
+                connection.setRequestProperty("CST", cst);
+                connection.setRequestProperty("X-SECURITY-TOKEN", x_security_token);
+                
+            }
             connection.setDoOutput(true);
-            connection.getOutputStream().write(json.toString().getBytes());
             
+            OutputStream os = connection.getOutputStream();
+            if(json!=null){os.write(json.toString().getBytes());os.flush();}
             InputStream in = connection.getInputStream();
+            System.out.println("available ro read = "+in.available());
             StringBuilder b = new StringBuilder("");
             int c=0;
             while((c=in.read())!=-1){b.append((char)c);}
             res=b.toString();
+
+            if(isLogin){
+                cst = connection.getHeaderField("cst");
+                x_security_token = connection.getHeaderField("x-security-token");
+                if(res==null||res.length()<2){throw new RuntimeException("no response after login");}
+            }
+            
+            System.out.print("the res value is = "+res);
             in.close();
-            if(res.length()<5){throw new RuntimeException("FUUUUUUCK");}
-//            if (connection.getResponseCode() != HttpURLConnection.HTTP_CREATED) {
-//                throw new RuntimeException("Failed : HTTP error code : "+ connection.getResponseCode()+" "+connection.getResponseMessage());
-//            }
+            os.close();
+            
         } catch (FileNotFoundException ex) {
             Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
         }
-//        CONNECTIONS.put(endpoint, new ArrayList<>(3));
-//        CONNECTIONS.get(endpoint).set(0, connection);
+        finally{
+            if(connection!=null)connection.disconnect();
+        }
         return res;
     }
     
+    public String token(){
+        String res=null;
+        try {
+            HttpURLConnection connection;
+            connection =(HttpURLConnection)(new URL("https://demo-api.ig.com/gateway/deal/session?fetchSessionTokens=true")).openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("X-IG-API-KEY", AuthKey);
+            connection.setRequestProperty("VERSION", "1");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("Accept", "application/json");
+            Session session = sm.getSessions().values().stream().findFirst().get();
+            if(session==null){throw new RuntimeException("no session");}
+            connection.setRequestProperty("IG-ACCOUNT-ID", session.getAccountId());
+            connection.setRequestProperty("Authorization", "Bearer "+session.getOauthToken().getAccess_token());
+            connection.setDoInput(true);
+            InputStream in = connection.getInputStream();
+            StringBuilder b = new StringBuilder("");
+            int c=0;
+            while((c=in.read())!=-1){b.append((char)c);}
+            cst = connection.getHeaderField("cst");
+            x_security_token = connection.getHeaderField("x-security-token");
+            System.out.println("CST is = "+cst);
+            System.out.println("XST is = "+x_security_token);
+            c=0;
+            res = b.toString()+" CST:"+cst+" XST:"+x_security_token;
+            
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(ConnectionManager.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(ConnectionManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return res;
+    }
+
     public String send(String body,HttpURLConnection connection){
         StringBuilder responseString = new StringBuilder("");
         JsonObject json = null;

@@ -7,7 +7,9 @@ package service;
 
 import java.util.HashMap;
 import java.util.List;
+import javax.ejb.DependsOn;
 import javax.ejb.Singleton;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.JsonObject;
 import trading.OAuthToken;
@@ -17,21 +19,20 @@ import trading.Session;
  *
  * @author Archie
  */
-@Singleton
+@Singleton(name="sessionManager")
+//@DependsOn({"connectionmanager"})
 public class SessionManager {
     
     
-    private static final HashMap<Long,List<Session>> SESSIONS = new HashMap<>();
-    //see if a session is open for accountId
-    public synchronized boolean hasSession(Long accountId){
-        return SESSIONS.containsKey(accountId);
-    }
+    private final HashMap<String,Session> SESSIONS = new HashMap<>();
+    private String sessionKey = "";
+    
     //retrieve the last session addedd/created
     public Session retrieveSession(JsonObject sessionJson){
         Session session;
         long id = Long.parseLong(sessionJson.getJsonString("accountId").getString());
-        if(hasSession(id)&&SESSIONS.get(id).size()>0){
-            session=SESSIONS.get(id).get(SESSIONS.get(id).size()-1);
+        if(SESSIONS.containsKey(id)){
+            session=SESSIONS.get(id);
         }
         else{
             session=createSession(sessionJson);
@@ -40,25 +41,34 @@ public class SessionManager {
     }
     public Session createSession(JsonObject sessionJson){
         Session session=null;
-        if(sessionJson!=null){
+        if(sessionJson!=null&&sessionJson.toString().contains("accountId")){
             session=new Session();
-            session.setAccountId(sessionJson.getJsonString("accountId").getString());
-            session.setClientId(sessionJson.getJsonString("clientId").getString());
+            session.setAccountId(
+                    sessionJson.getString("accountId"));
+            session.setClientId(sessionJson.getString("clientId"));
             session.setTimezoneOffset(sessionJson.getJsonNumber("timezoneOffset").doubleValue());
-            session.setLightStreamerEndpoint(sessionJson.getJsonString("lightstreamerEndpoint").getString());
-            session.setOauthToken(new OAuthToken(sessionJson.getJsonObject("oauthToken").getJsonString("access_token").getString(),
-                    sessionJson.getJsonObject("oauthToken").getJsonString("refresh_token").getString(),
-                    sessionJson.getJsonObject("oauthToken").getJsonString("scope").getString(),
-                    sessionJson.getJsonObject("oauthToken").getJsonString("token_type").getString(),
-                    sessionJson.getJsonObject("oauthToken").getJsonString("expires_in").getString()));
+            session.setLightStreamerEndpoint(sessionJson.getString("lightstreamerEndpoint"));
+            session.setOauthToken(new OAuthToken(sessionJson.getJsonObject("oauthToken").getString("access_token"),
+                    sessionJson.getJsonObject("oauthToken").getString("refresh_token"),
+                    sessionJson.getJsonObject("oauthToken").getString("scope"),
+                    sessionJson.getJsonObject("oauthToken").getString("token_type"),
+                    sessionJson.getJsonObject("oauthToken").getString("expires_in")));
         }
         else{
             throw new RuntimeException("The funcking sessionJson is null");
         }
         return session;
     }
-    public HashMap<Long, List<Session>> getSessions() {
+    public HashMap<String, Session> getSessions() {
         return SESSIONS;
+    }
+
+    public String getSessionKey() {
+        return sessionKey;
+    }
+
+    public void setSessionKey(String sessionKey) {
+        this.sessionKey = sessionKey;
     }
     
 }
