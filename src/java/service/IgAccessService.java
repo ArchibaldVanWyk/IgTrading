@@ -23,6 +23,7 @@ import javax.ws.rs.core.MediaType;
 import trading.Deal;
 import trading.DealingRules;
 import trading.Instrument;
+import trading.InstrumentType;
 import trading.Market;
 import trading.Position;
 import trading.Session;
@@ -138,8 +139,15 @@ public class IgAccessService {
             DealingRules rules = new DealingRules();
             
             Instrument ins = new Instrument();
+            ins.setEpic(mktjs.getString("epic"));
+            ins.setExpiry(mktjs.getString("expiry"));
+            ins.setName(mktjs.getString("instrumentName"));
+            ins.setLotSize(mktjs.getJsonNumber("lotSize").doubleValue());
             
             Snapshot ss = new Snapshot();
+            ss.setBid(mktjs.getJsonNumber("bid").doubleValue());
+            ss.setDelayTime(mktjs.getJsonNumber("delayTime").doubleValue());
+            ss.setLow(mktjs.getJsonNumber("low").doubleValue());
             
             Position position = new Position();
             position.setContractSize(posjs.getJsonNumber("contractSize").doubleValue());
