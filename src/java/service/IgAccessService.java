@@ -20,6 +20,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import trading.Deal;
 import trading.DealingRules;
 import trading.Instrument;
 import trading.Market;
@@ -125,6 +126,7 @@ public class IgAccessService {
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String positions(){
         String resp = cm.createConnection("GET", "/positions", null);
+        if(resp==null||resp.length()<3){return "No data";}
         JsonArray jsonArr = Json.createReader(new StringReader(resp)).readArray();
         
         for(int i=0;i<jsonArr.size();i++){
@@ -132,10 +134,29 @@ public class IgAccessService {
             JsonObject mktjs = obj.getJsonObject("market");
             JsonObject posjs = obj.getJsonObject("position");
             Market market = new Market();
+            
             DealingRules rules = new DealingRules();
+            
             Instrument ins = new Instrument();
+            
             Snapshot ss = new Snapshot();
             
+            Position position = new Position();
+            position.setContractSize(posjs.getJsonNumber("contractSize").doubleValue());
+            position.setControlledRisk(posjs.getBoolean("controlledRisk"));
+            position.setCreatedDate(posjs.getString("createdDate"));
+            position.setCreatedDateUTC(posjs.getString("createdDateUTC"));
+            position.setCurrency(posjs.getString("currency"));
+            position.setDealId(posjs.getString("dealId"));
+            position.setDealReference("dealReference ");
+            position.setDealDirection(posjs.getString("direction").equals("SELL")?Deal.Direction.SELL:Deal.Direction.BUY);
+            position.setLevel(posjs.getJsonNumber("level").doubleValue());
+            position.setLimitLevel(posjs.getJsonNumber("limitLevel").doubleValue());
+            position.setSize(posjs.getJsonNumber("size").doubleValue());
+            position.setStopLevel(posjs.getJsonNumber("stopLevel").doubleValue());
+            position.setTrailingStep(posjs.getJsonNumber("trailingStep").doubleValue());
+            position.setTrailingStopDistance(posjs.getJsonNumber("trailingStopDistance").doubleValue());
+            position.setMarket(market);
             
         }
         
