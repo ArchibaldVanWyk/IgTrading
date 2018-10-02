@@ -6,6 +6,8 @@
 package service;
 
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.json.Json;
@@ -25,6 +27,7 @@ import trading.DealingRules;
 import trading.Instrument;
 import trading.InstrumentType;
 import trading.Market;
+import trading.MarketNode;
 import trading.Position;
 import trading.Session;
 import trading.Snapshot;
@@ -103,6 +106,13 @@ public class IgAccessService {
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String marketNavigation(String in){
         String resp = cm.createConnection("GET", "/marketnavigation", null);
+        
+        JsonObject json = Json.createReader(new StringReader(resp)).readObject();
+        JsonArray marketsArr = json.getJsonArray("markets");
+        JsonArray nodesArr = json.getJsonArray("nodes ");
+        List<Market> markets = parseMarketList(marketsArr);
+        List<MarketNode> nodes = parseMarketNodes(nodesArr);
+        
         if(resp==null||resp.length()<3){resp="no data";}
         return resp;
     }
@@ -129,47 +139,91 @@ public class IgAccessService {
         String resp = cm.createConnection("GET", "/positions", null);
         if(resp==null||resp.length()<3){return "No data";}
         JsonArray jsonArr = Json.createReader(new StringReader(resp)).readArray();
-        
-        for(int i=0;i<jsonArr.size();i++){
-            JsonObject obj = jsonArr.getJsonObject(i);
-            JsonObject mktjs = obj.getJsonObject("market");
-            JsonObject posjs = obj.getJsonObject("position");
-            Market market = new Market();
+        if(fw.getPositions().size()<jsonArr.size()){
+           fw.getPositions().clear();
+            for(int i=0;i<jsonArr.size();i++){
             
-            DealingRules rules = new DealingRules();
+                JsonObject obj = jsonArr.getJsonObject(i);
+                JsonObject mktjs = obj.getJsonObject("market");
+                JsonObject posjs = obj.getJsonObject("position");
+                Market market = parseMarket(mktjs);
+
+                Position position = new Position();
+                position.setContractSize(posjs.getJsonNumber("contractSize").doubleValue());
+                position.setControlledRisk(posjs.getBoolean("controlledRisk"));
+                position.setCreatedDate(posjs.getString("createdDate"));
+                position.setCreatedDateUTC(posjs.getString("createdDateUTC"));
+                position.setCurrency(posjs.getString("currency"));
+                position.setDealId(posjs.getString("dealId"));
+                position.setDealReference("dealReference");
+                position.setDealDirection(posjs.getString("direction").equals("SELL")?Deal.Direction.SELL:Deal.Direction.BUY);
+                position.setLevel(posjs.getJsonNumber("level").doubleValue());
+                position.setLimitLevel(posjs.getJsonNumber("limitLevel").doubleValue());
+                position.setSize(posjs.getJsonNumber("size").doubleValue());
+                position.setStopLevel(posjs.getJsonNumber("stopLevel").doubleValue());
+                position.setTrailingStep(posjs.getJsonNumber("trailingStep").doubleValue());
+                position.setTrailingStopDistance(posjs.getJsonNumber("trailingStopDistance").doubleValue());
+                position.setMarket(market);
+                fw.getPositions().add(position);
             
-            Instrument ins = new Instrument();
-            ins.setEpic(mktjs.getString("epic"));
-            ins.setExpiry(mktjs.getString("expiry"));
-            ins.setName(mktjs.getString("instrumentName"));
-            ins.setLotSize(mktjs.getJsonNumber("lotSize").doubleValue());
-            
-            Snapshot ss = new Snapshot();
-            ss.setBid(mktjs.getJsonNumber("bid").doubleValue());
-            ss.setDelayTime(mktjs.getJsonNumber("delayTime").doubleValue());
-            ss.setLow(mktjs.getJsonNumber("low").doubleValue());
-            
-            Position position = new Position();
-            position.setContractSize(posjs.getJsonNumber("contractSize").doubleValue());
-            position.setControlledRisk(posjs.getBoolean("controlledRisk"));
-            position.setCreatedDate(posjs.getString("createdDate"));
-            position.setCreatedDateUTC(posjs.getString("createdDateUTC"));
-            position.setCurrency(posjs.getString("currency"));
-            position.setDealId(posjs.getString("dealId"));
-            position.setDealReference("dealReference ");
-            position.setDealDirection(posjs.getString("direction").equals("SELL")?Deal.Direction.SELL:Deal.Direction.BUY);
-            position.setLevel(posjs.getJsonNumber("level").doubleValue());
-            position.setLimitLevel(posjs.getJsonNumber("limitLevel").doubleValue());
-            position.setSize(posjs.getJsonNumber("size").doubleValue());
-            position.setStopLevel(posjs.getJsonNumber("stopLevel").doubleValue());
-            position.setTrailingStep(posjs.getJsonNumber("trailingStep").doubleValue());
-            position.setTrailingStopDistance(posjs.getJsonNumber("trailingStopDistance").doubleValue());
-            position.setMarket(market);
-            
+            }
         }
-        
-        if(resp==null||resp.length()<3){resp="no data";}
+        resp=jsonArr.toString();
         return resp;
+    }
+    private List<Market> parseMarketList(JsonArray marketsArr){
+        List<Market> markets = new ArrayList<>(marketsArr.size());
+        for(int i=0;i<marketsArr.size();i++){
+            markets.set(i, parseMarket(marketsArr.getJsonObject(i)));
+        }
+        return markets;
+    }
+    private List<MarketNode> parseMarketNodes(JsonArray nodeArr){
+        List<MarketNode> nodes = new ArrayList<>(nodeArr.size());
+        for(int i=0;i<nodeArr.size();i++){
+            nodes.set(i, parseNode(nodeArr.getJsonObject(i)));
+        }
+        return nodes;
+    }
+    
+    private MarketNode parseNode(JsonObject json){
+        MarketNode node = new MarketNode();
+        node.setId(json.getString("id"));
+        node.setName(json.getString("name"));
+        return node;
+    }
+    
+    private Market parseMarket(JsonObject json){
+        
+        Market market = new Market();
+        
+        DealingRules rules = new DealingRules();
+
+        Instrument ins = new Instrument();
+        ins.setEpic(json.getString("epic"));
+        ins.setExpiry(json.getString("expiry"));
+        ins.setName(json.getString("instrumentName"));
+        ins.setLotSize(json.getJsonNumber("lotSize").doubleValue());
+        ins.setScalingFactor(json.getJsonNumber("scalingFactor").doubleValue());
+        ins.setStreamingPricesAvailable(json.getBoolean("streamingPricesAvailable"));
+        ins.setType(json.getString("instrumentType"));
+
+        Snapshot ss = new Snapshot();
+        ss.setBid(json.getJsonNumber("bid").doubleValue());
+        ss.setDelayTime(json.getJsonNumber("delayTime").doubleValue());
+        ss.setLow(json.getJsonNumber("low").doubleValue());
+        ss.setOffer(json.getJsonNumber("offer").doubleValue());
+        ss.setNetChange(json.getJsonNumber("netChange").doubleValue());
+        ss.setPercentageChange(json.getJsonNumber("percentageChange").doubleValue());
+        ss.setUpdateTime(json.getString("updateTime"));
+        ss.setUpdateTimeUTC(json.getString("updateTimeUTC"));
+        ss.setMarketStatus(json.getString("marketStatus"));
+
+        market.setDealingRules(rules);
+        market.setInstrument(ins);
+        market.setSnapshot(ss);
+        
+        return market;
     }
     
 }

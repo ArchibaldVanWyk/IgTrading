@@ -5,6 +5,7 @@
  */
 package trading;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -43,13 +44,22 @@ public class Instrument {
     private Unit tradeSizeUnit;
     private String valueOfOnePip;
     private InstrumentType type;
+    private double scalingFactor;
 
     public InstrumentType getType() {
         return type;
     }
 
-    public void setType(InstrumentType type) {
-        this.type = type;
+    public double getScalingFactor() {
+        return scalingFactor;
+    }
+
+    public void setScalingFactor(double scalingFactor) {
+        this.scalingFactor = scalingFactor;
+    }
+
+    public void setType(String type) {
+        this.type=Arrays.stream(InstrumentType.values()).filter(c->c.toString().equals(type)).findFirst().get();
     }
 
     public String getChartCode() {

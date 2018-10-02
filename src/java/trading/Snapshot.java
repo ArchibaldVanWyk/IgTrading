@@ -5,6 +5,8 @@
  */
 package trading;
 
+import java.util.Arrays;
+
 
 /**
  *
@@ -23,8 +25,16 @@ public class Snapshot {
     private double netChange;
     private double offer;
     private double percentageChange;
-    private double scalingFactor;
     private String updateTime;
+    private String updateTimeUTC;
+
+    public String getUpdateTimeUTC() {
+        return updateTimeUTC;
+    }
+
+    public void setUpdateTimeUTC(String updateTimeUTC) {
+        this.updateTimeUTC = updateTimeUTC;
+    }
 
     public double getBid() {
         return bid;
@@ -86,8 +96,8 @@ public class Snapshot {
         return marketStatus;
     }
 
-    public void setMarketStatus(MarketStatus marketStatus) {
-        this.marketStatus = marketStatus;
+    public void setMarketStatus(String marketStatus) {
+        this.marketStatus=Arrays.stream(MarketStatus.values()).filter(c->c.toString().equals(marketStatus)).findFirst().get();
     }
 
     public double getNetChange() {
@@ -112,14 +122,6 @@ public class Snapshot {
 
     public void setPercentageChange(double percentageChange) {
         this.percentageChange = percentageChange;
-    }
-
-    public double getScalingFactor() {
-        return scalingFactor;
-    }
-
-    public void setScalingFactor(double scalingFactor) {
-        this.scalingFactor = scalingFactor;
     }
 
     public String getUpdateTime() {
