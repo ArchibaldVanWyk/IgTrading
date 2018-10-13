@@ -84,9 +84,9 @@ public class ConnectionManager {
             baseUrl=props.getProperty("base-url");
             String ep = endpoint;
             if(baseUrl.endsWith("/")&&endpoint.startsWith("/")){ep=endpoint.substring(1);}
-//            if(ep.contains("marketnavigation")){ep=""+ep+"/668394";}
             version=propsVersions.getProperty(endpoint.substring(1).replace('/', '.').replace("{", "").replace("}", "")+"."+method.trim().toUpperCase(),"1");
             p("about to open connection");
+            p("url = "+baseUrl+ep);
             connection =(HttpURLConnection)(new URL(baseUrl+ep)).openConnection();
             if(connection==null){
                 p("error: no connection to remote server");
@@ -100,6 +100,8 @@ public class ConnectionManager {
                 connection.setRequestProperty("VERSION", version);
                 connection.setRequestProperty("Content-Type", "application/json");
                 connection.setRequestProperty("Accept", "application/json");
+                p("key: "+key);
+                p("endpoint: "+endpoint+" method: "+method+" version: "+version);
                 this.p("connection properties set");
                 boolean isLogin = "POST".equals(method.toUpperCase())&&"/session".equals(endpoint);
                 if(!isLogin){
@@ -112,20 +114,21 @@ public class ConnectionManager {
                 }
                 connection.setDoOutput(true);
                 this.p("about to create in and out streams");
-                try(OutputStream os = connection.getOutputStream();InputStream in = connection.getInputStream();){
+                try(OutputStream os = connection.getOutputStream();){
                     p("in and out stream created");
                     if(json!=null){
                         p("about to write to remote");
                         os.write(json.toString().getBytes());os.flush();
                         p("done writing to remote");
                     }
-                    
-                    p("available ro read = "+in.available());
-                    StringBuilder b = new StringBuilder("");
-                    int c=0;
-                    p("about to read from remote");
-                    while((c=in.read())!=-1){b.append((char)c);}
-                    res=b.toString();
+                    try(InputStream in = connection.getInputStream();){
+                        p("available ro read = "+in.available());
+                        StringBuilder b = new StringBuilder("");
+                        int c=0;
+                        p("about to read from remote");
+                        while((c=in.read())!=-1){b.append((char)c);}
+                        res=b.toString();
+                    }
                     p("read from remote = "+res.length());
                     if(isLogin){
                         cst = connection.getHeaderField("cst");
