@@ -21,7 +21,7 @@ import trading.Session;
  */
 @Singleton(name="sessionManager")
 //@DependsOn({"connectionmanager"})
-public class SessionManager {
+public class SessionManager extends AbstractService{
     
     
     private final HashMap<String,Session> SESSIONS = new HashMap<>();
