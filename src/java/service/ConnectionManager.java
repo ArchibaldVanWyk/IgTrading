@@ -11,6 +11,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -19,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
@@ -27,6 +29,7 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.ejb.DependsOn;
 import javax.ejb.Singleton;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.JsonObject;
 import trading.Session;
@@ -36,29 +39,31 @@ import trading.Session;
  * @author Archie
  */
 @Singleton(name="connectionmanager")
+@ApplicationScoped
 @DependsOn({"sessionManager"})
-public class ConnectionManager extends AbstractService{
+public class ConnectionManager {
     
     @Inject IgAccessService ig;
     @Inject SessionManager sm;
     private String AuthKey="";
     private String cst ="";
     private String x_security_token="";
-    protected static File trcLog;
+    private File trcLog;
     private final HashMap<String,List<HttpURLConnection>> CONNECTIONS = new HashMap<>();
     
-    @PostConstruct
-    public void init(){
-        if(trcLog==null){
-            Path p = Paths.get("c:/logs/TraceLog.txt");
-            try{
-                if(!Files.exists(p))trcLog=Files.createFile(Paths.get("c:/logs/TraceLog.txt")).toFile();
-                trcLog.setWritable(true);
-            } catch (IOException ex) {
-                Logger.getLogger(AbstractService.class.getName()).log(Level.SEVERE, null, ex);
-            }
+    public ConnectionManager(){
+        try{
+            Files.deleteIfExists(Paths.get("c:/logs/TraceLog.txt"));
+            trcLog=Files.createFile(Paths.get("c:/logs/TraceLog.txt")).toFile();
+            trcLog.setWritable(true);
+            System.setOut(new PrintStream(trcLog));
+        } catch (IOException ex) {
+            Logger.getLogger(AbstractService.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    
+    @PostConstruct
+    public void init(){p("starting: "+LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME).replace("T"," "));}
     
     //return connection to specified endpoint for the method specified
     public String createConnection(String method,String endpoint,JsonObject json){
@@ -69,12 +74,11 @@ public class ConnectionManager extends AbstractService{
         String version;
         String baseUrl;
         String res=null;
-        p("write this fucking shit inot the fucccccckkccmdojnvwivnwinvei fIKLELECmev ehv!!!!!");
         try(FileReader propsFile=new FileReader("/GitRepositories/IgTrading\\properties/IgRest-api.properties");
             FileReader propVersionRdr = new FileReader("/GitRepositories/IgTrading\\properties/IgRest-api-versions.properties")){
             props.load(propsFile);
             propsVersions.load(propVersionRdr);
-            p("properties loaded");
+            this.p("properties loaded");
             key=props.getProperty("header.X-IG-API-KEY");
             AuthKey=key;
             baseUrl=props.getProperty("base-url");
@@ -90,13 +94,13 @@ public class ConnectionManager extends AbstractService{
             }
             else
             {
-                p("connection was allocated");
+                this.p("connection was allocated");
                 connection.setRequestMethod(method.toUpperCase().trim());
                 connection.setRequestProperty("X-IG-API-KEY", key);
                 connection.setRequestProperty("VERSION", version);
                 connection.setRequestProperty("Content-Type", "application/json");
                 connection.setRequestProperty("Accept", "application/json");
-                p("connection properties set");
+                this.p("connection properties set");
                 boolean isLogin = "POST".equals(method.toUpperCase())&&"/session".equals(endpoint);
                 if(!isLogin){
                     Session session = sm.getSessions().values().stream().findFirst().get();
@@ -107,9 +111,9 @@ public class ConnectionManager extends AbstractService{
                     connection.setRequestProperty("X-SECURITY-TOKEN", x_security_token);
                 }
                 connection.setDoOutput(true);
-                p("about to create in and out streams");
+                this.p("about to create in and out streams");
                 try(OutputStream os = connection.getOutputStream();InputStream in = connection.getInputStream();){
-                    
+                    p("in and out stream created");
                     if(json!=null){
                         p("about to write to remote");
                         os.write(json.toString().getBytes());os.flush();
@@ -129,8 +133,7 @@ public class ConnectionManager extends AbstractService{
                         if(res==null||res.length()<2){throw new RuntimeException("no response after login");}
                     }
                     p("the res value is = "+res);
-                    
-                } 
+                }catch(Exception ex){p("problem creating streams "+ex.getMessage());}
             }
         } catch (FileNotFoundException ex) {
             Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
@@ -211,20 +214,58 @@ public class ConnectionManager extends AbstractService{
     public HashMap<String,List<HttpURLConnection>> getConnections() {
         return CONNECTIONS;
     }
+
+    public IgAccessService getIg() {
+        return ig;
+    }
+
+    public void setIg(IgAccessService ig) {
+        this.ig = ig;
+    }
+
+    public SessionManager getSm() {
+        return sm;
+    }
+
+    public void setSm(SessionManager sm) {
+        this.sm = sm;
+    }
+
+    public String getAuthKey() {
+        return AuthKey;
+    }
+
+    public void setAuthKey(String AuthKey) {
+        this.AuthKey = AuthKey;
+    }
+
+    public String getCst() {
+        return cst;
+    }
+
+    public void setCst(String cst) {
+        this.cst = cst;
+    }
+
+    public String getX_security_token() {
+        return x_security_token;
+    }
+
+    public void setX_security_token(String x_security_token) {
+        this.x_security_token = x_security_token;
+    }
+
+    public File getTrcLog() {
+        return trcLog;
+    }
+
+    public void setTrcLog(File trcLog) {
+        this.trcLog = trcLog;
+    }
     
     
-    protected void p(Object o){
-        
-        
-        try(PrintWriter out = new PrintWriter(trcLog);){
-            LocalDateTime time = LocalDateTime.now();
-            String s = ""+time+" IG-APPLICATION LOG: "+o.toString()+"\n";
-            out.append(s.toUpperCase());
-            out.append("WAHHHBBBabvinro'bno'fvnowq");
-            out.flush();
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(AbstractService.class.getName()).log(Level.SEVERE, null, ex);
-        } 
+    public void p(Object o){
+        System.out.println(o.toString().toUpperCase());
     };
     
     
