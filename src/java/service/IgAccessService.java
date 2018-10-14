@@ -6,6 +6,8 @@
 package service;
 
 import java.io.StringReader;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import javax.enterprise.context.RequestScoped;
@@ -105,6 +107,7 @@ public class IgAccessService {
     @Path("marketnavigation")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String marketNavigation(String in){
+        cm.p(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)+" "+this.getClass().getEnclosingMethod().getName());
         String resp = cm.createConnection("GET", "/marketnavigation", null);
         
         JsonObject json = Json.createReader(new StringReader(resp)).readObject();

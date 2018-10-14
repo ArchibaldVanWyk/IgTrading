@@ -107,36 +107,45 @@ public class ConnectionManager {
                 if(!isLogin){
                     Session session = sm.getSessions().values().stream().findFirst().get();
                     if(session==null){throw new RuntimeException("no session");}
-                    connection.setRequestProperty("IG-ACCOUNT-ID", session.getAccountId());
-                    connection.setRequestProperty("Authorization", session.getOauthToken().getAccess_token());
+//                    connection.setRequestProperty("IG-ACCOUNT-ID", session.getAccountId());
+//                    connection.setRequestProperty("Authorization", session.getOauthToken().getAccess_token());
                     connection.setRequestProperty("CST", cst);
                     connection.setRequestProperty("X-SECURITY-TOKEN", x_security_token);
+                    p("IG-ACCOUNT-ID: "+ session.getAccountId());
+                    p("Authorization: " +session.getOauthToken().getAccess_token());
+                    p("CST: "+cst);
+                    p("X-SECURITY-TOKEN: "+x_security_token);
                 }
-                connection.setDoOutput(true);
-                this.p("about to create in and out streams");
-                try(OutputStream os = connection.getOutputStream();){
-                    p("in and out stream created");
-                    if(json!=null){
+                if(json!=null){
+                    connection.setDoOutput(true);
+                    this.p("about to create out stream");
+                    try(OutputStream os = connection.getOutputStream();){
+                        p("in and out stream created");
                         p("about to write to remote");
                         os.write(json.toString().getBytes());os.flush();
                         p("done writing to remote");
-                    }
-                    try(InputStream in = connection.getInputStream();){
-                        p("available ro read = "+in.available());
-                        StringBuilder b = new StringBuilder("");
-                        int c=0;
-                        p("about to read from remote");
-                        while((c=in.read())!=-1){b.append((char)c);}
-                        res=b.toString();
-                    }
-                    p("read from remote = "+res.length());
-                    if(isLogin){
-                        cst = connection.getHeaderField("cst");
-                        x_security_token = connection.getHeaderField("x-security-token");
-                        if(res==null||res.length()<2){throw new RuntimeException("no response after login");}
-                    }
-                    p("the res value is = "+res);
-                }catch(Exception ex){p("problem creating streams "+ex.getMessage());}
+                        
+                    }catch(Exception ex){p("problem creating streams "+ex.getMessage());}
+                }
+                p("about to create in stream");
+                if(!connection.getDoInput()&&!connection.getDoOutput()){connection.setDoInput(true);}
+                try(InputStream in = connection.getInputStream();){
+                    p("available ro read = "+in.available());
+                    StringBuilder b = new StringBuilder("");
+                    int c=0;
+                    p("about to read from remote");
+                    while((c=in.read())!=-1){b.append((char)c);}
+                    res=b.toString();
+                }catch(Exception exc){p("problem with in stream: "+exc.toString());}
+                p("read from remote = "+res.length());
+                if(isLogin){
+                    cst = connection.getHeaderField("cst");
+                    x_security_token = connection.getHeaderField("x-security-token");
+                    p("Get Header CST: "+cst);
+                    p("Get Header X-SECURITY-TOKEN: "+x_security_token);
+                    if(res==null||res.length()<2){throw new RuntimeException("no response after login");}
+                }
+                p("the res value is = "+res);
             }
         } catch (FileNotFoundException ex) {
             Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
