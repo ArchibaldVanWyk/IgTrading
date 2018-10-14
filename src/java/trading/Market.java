@@ -16,6 +16,15 @@ public class Market {
     private DealingRules dealingRules;
     private Instrument instrument;
     private Snapshot snapshot;
+    private String nodeId;
+
+    public String getNodeId() {
+        return nodeId;
+    }
+
+    public void setNodeId(String nodeId) {
+        this.nodeId = nodeId;
+    }
 
     public Snapshot getSnapshot() {
         return snapshot;

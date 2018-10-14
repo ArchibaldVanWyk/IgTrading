@@ -14,8 +14,17 @@ import java.util.List;
 public class MarketNode {
     
     private List<Market> markets;
+    private List<MarketNode> nodes;
     private String Id;
     private String name;
+    
+    public List<MarketNode> getNodes() {
+        return nodes;
+    }
+
+    public void setNodes(List<MarketNode> nodes) {
+        this.nodes = nodes;
+    }
 
     public List<Market> getMarkets() {
         return markets;

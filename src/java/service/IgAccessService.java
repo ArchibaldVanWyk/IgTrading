@@ -108,21 +108,36 @@ public class IgAccessService {
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String marketNavigation(String in){
         cm.p(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME).replace("T"," ")+" market navigation");
+        
         cm.p("about to call remote");
         String resp = cm.createConnection("GET", "/marketnavigation", null);
+        String nodeId=null;
         cm.p(resp==null?"no fucking response":"success");
         JsonObject json = Json.createReader(new StringReader(resp)).readObject();
         cm.p("json string collected:");
         cm.p(json);
-        JsonValue marketsArr = json.get("markets");
+        JsonArray marketsArr = null;
         
-        cm.p(marketsArr==null?"no market array":"market array collected:\n"+marketsArr);
-        JsonArray nodesArr = json.getJsonArray("nodes");
-        cm.p(nodesArr==null?"no node array":"node array collected:\n"+nodesArr);
-//        List<Market> markets = parseMarketList((JsonArray)marketsArr);
-        List<MarketNode> nodes = parseMarketNodes(nodesArr);
-        cm.p("nodes_list size: "+nodes.size());
+        try{
+            marketsArr = json.getJsonArray("markets");
+            List<Market> markets = parseMarketList(marketsArr,nodeId);
+        }
+        catch(Exception exc){
+            try{
+                cm.p(marketsArr==null?"no market array":"market array collected:\n"+marketsArr);
+                JsonArray nodesArr = json.getJsonArray("nodes");
+                cm.p(nodesArr==null?"no node array":"node array collected:\n"+nodesArr);
+                List<MarketNode> nodes = parseMarketNodes(nodesArr);
+                cm.p("nodes_list size: "+nodes.size());
+                
+            }
+            catch(Exception ex){
+                throw ex;
+            }
+            
+        }
         if(resp==null||resp.length()<3){resp="no data";}
+        
         return resp;
     }
     @GET
@@ -155,7 +170,7 @@ public class IgAccessService {
                 JsonObject obj = jsonArr.getJsonObject(i);
                 JsonObject mktjs = obj.getJsonObject("market");
                 JsonObject posjs = obj.getJsonObject("position");
-                Market market = parseMarket(mktjs);
+                Market market = parseMarket(mktjs,null);
 
                 Position position = new Position();
                 position.setContractSize(posjs.getJsonNumber("contractSize").doubleValue());
@@ -180,18 +195,21 @@ public class IgAccessService {
         resp=jsonArr.toString();
         return resp;
     }
-    private List<Market> parseMarketList(JsonArray marketsArr){
-        List<Market> markets = new ArrayList<>(marketsArr.size());
+    private List<Market> parseMarketList(JsonArray marketsArr, String nodeId){
+        if(marketsArr.isEmpty()){cm.p("market array is empty");return null;}
+        cm.p("market array size to be parsed = "+marketsArr.size());
+        List<Market> markets = new ArrayList<>();
         for(int i=0;i<marketsArr.size();i++){
-            markets.set(i, parseMarket(marketsArr.getJsonObject(i)));
+            markets.add(parseMarket(marketsArr.getJsonObject(i),nodeId));
         }
         return markets;
     }
     private List<MarketNode> parseMarketNodes(JsonArray nodeArr){
-        if(nodeArr==null){throw new RuntimeException("node array is null");}
-        List<MarketNode> nodes = new ArrayList<>(nodeArr.size());
+        if(nodeArr==null||nodeArr.isEmpty()){cm.p("node array is empty");return null;}
+        cm.p("node array size to be parsed = "+nodeArr.size());
+        List<MarketNode> nodes = new ArrayList<>();
         for(int i=0;i<nodeArr.size();i++){
-            nodes.set(i, parseNode(nodeArr.getJsonObject(i)));
+            nodes.add(parseNode(nodeArr.getJsonObject(i)));
         }
         return nodes;
     }
@@ -203,10 +221,10 @@ public class IgAccessService {
         return node;
     }
     
-    private Market parseMarket(JsonObject json){
+    private Market parseMarket(JsonObject json, String nodeId){
         
         Market market = new Market();
-        
+        market.setNodeId(nodeId);
         DealingRules rules = new DealingRules();
 
         Instrument ins = new Instrument();
