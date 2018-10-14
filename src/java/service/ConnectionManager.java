@@ -140,7 +140,9 @@ public class ConnectionManager {
                 p("read from remote = "+res.length());
                 if(isLogin){
                     cst = connection.getHeaderField("cst");
+                    if(cst==null)connection.getHeaderField("CST");
                     x_security_token = connection.getHeaderField("x-security-token");
+                    if(x_security_token==null)connection.getHeaderField("X-SECURITY-TOKEN");
                     p("Get Header CST: "+cst);
                     p("Get Header X-SECURITY-TOKEN: "+x_security_token);
                     if(res==null||res.length()<2){throw new RuntimeException("no response after login");}

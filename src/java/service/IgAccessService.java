@@ -107,15 +107,21 @@ public class IgAccessService {
     @Path("marketnavigation")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String marketNavigation(String in){
-        cm.p(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)+" "+this.getClass().getEnclosingMethod().getName());
+        cm.p(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME).replace("T"," ")+" market navigation");
+        cm.p("about to call remote");
         String resp = cm.createConnection("GET", "/marketnavigation", null);
-        
+        cm.p(resp==null?"no fucking response":"success");
         JsonObject json = Json.createReader(new StringReader(resp)).readObject();
-        JsonArray marketsArr = json.getJsonArray("markets");
-        JsonArray nodesArr = json.getJsonArray("nodes ");
-        List<Market> markets = parseMarketList(marketsArr);
-        List<MarketNode> nodes = parseMarketNodes(nodesArr);
+        cm.p("json string collected:");
+        cm.p(json);
+        JsonValue marketsArr = json.get("markets");
         
+        cm.p(marketsArr==null?"no market array":"market array collected:\n"+marketsArr);
+        JsonArray nodesArr = json.getJsonArray("nodes");
+        cm.p(nodesArr==null?"no node array":"node array collected:\n"+nodesArr);
+//        List<Market> markets = parseMarketList((JsonArray)marketsArr);
+        List<MarketNode> nodes = parseMarketNodes(nodesArr);
+        cm.p("nodes_list size: "+nodes.size());
         if(resp==null||resp.length()<3){resp="no data";}
         return resp;
     }
@@ -182,6 +188,7 @@ public class IgAccessService {
         return markets;
     }
     private List<MarketNode> parseMarketNodes(JsonArray nodeArr){
+        if(nodeArr==null){throw new RuntimeException("node array is null");}
         List<MarketNode> nodes = new ArrayList<>(nodeArr.size());
         for(int i=0;i<nodeArr.size();i++){
             nodes.set(i, parseNode(nodeArr.getJsonObject(i)));
