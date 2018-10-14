@@ -5,11 +5,21 @@
  */
 package service;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.StringReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.json.Json;
@@ -34,6 +44,7 @@ import trading.Position;
 import trading.Session;
 import trading.Snapshot;
 
+
 /**
  *
  * @author Archie
@@ -47,6 +58,7 @@ public class IgAccessService {
     @Inject SessionManager sm;
     @PersistenceContext(unitName = "IgTradingPU")
     private EntityManager em;
+    private int num_of_markets=0;
     //Login with username and password and get Session object with oauth token
 
     @POST
@@ -107,39 +119,106 @@ public class IgAccessService {
     @Path("marketnavigation")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String marketNavigation(String in){
-        cm.p(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME).replace("T"," ")+" market navigation");
-        
-        cm.p("about to call remote");
-        String resp = cm.createConnection("GET", "/marketnavigation", null);
-        String nodeId=null;
-        cm.p(resp==null?"no fucking response":"success");
+//        cm.p(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME).replace("T"," ")+" market navigation");
+//        cm.p("input received = "+in);
+//        cm.p("about to call remote");
+        String nodeId=in==null||in.isEmpty()?"":in.trim();
+        String resp = cm.createConnection("GET", "/marketnavigation"+"/"+nodeId, null);
+        List<Market> markets = null;
+        List<MarketNode> nodes = null;
+//        cm.p(resp==null?"no fucking response":"success");
         JsonObject json = Json.createReader(new StringReader(resp)).readObject();
-        cm.p("json string collected:");
-        cm.p(json);
+//        cm.p("json string collected:");
+//        cm.p(json);
         JsonArray marketsArr = null;
-        
+        JsonArray nodesArr = null;
         try{
             marketsArr = json.getJsonArray("markets");
-            List<Market> markets = parseMarketList(marketsArr,nodeId);
+            markets = parseMarketList(marketsArr,nodeId);
         }
         catch(Exception exc){
             try{
-                cm.p(marketsArr==null?"no market array":"market array collected:\n"+marketsArr);
-                JsonArray nodesArr = json.getJsonArray("nodes");
-                cm.p(nodesArr==null?"no node array":"node array collected:\n"+nodesArr);
-                List<MarketNode> nodes = parseMarketNodes(nodesArr);
-                cm.p("nodes_list size: "+nodes.size());
-                
+//                cm.p(marketsArr==null?"no market array":"market array collected:\n"+marketsArr);
+                nodesArr = json.getJsonArray("nodes");
+//                cm.p(nodesArr==null?"no node array":"node array collected:\n"+nodesArr);
+                nodes = parseMarketNodes(nodesArr);
+//                cm.p("nodes_list size: "+nodes.size());
+                for(int i = 0;i<nodes.size();i++){
+                    parseNodesRecursively(nodes.get(i), "/marketnavigation"+"/"+nodes.get(i).getId());
+                    num_of_markets++;
+                }
+//                cm.p("number of markets parsed = "+num_of_markets);
             }
             catch(Exception ex){
                 throw ex;
             }
-            
         }
         if(resp==null||resp.length()<3){resp="no data";}
-        
+        cm.p("number of markets parsed = "+num_of_markets);
+        if(nodes!=null&&nodes.size()>0){
+            cm.p("about to save market object locally");
+            this.saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketNavigation/"+"marketNavData.ig");
+            cm.p("Data saved to "+"C:/GitRepositories/IgTrading/marketNavigation/"+"marketNavData.ig");
+            return "Local Market is ready";
+        }
         return resp;
     }
+    
+    private void parseNodesRecursively(MarketNode node,String endpoint){
+        try{Thread.sleep(500);} catch (InterruptedException ex) {
+            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        String resp = cm.createConnection("GET", endpoint, null);
+        List<Market> markets = null;
+        List<MarketNode> nodes = null;
+        
+        JsonObject json = Json.createReader(new StringReader(resp)).readObject();
+        
+        JsonArray marketsArr = null;
+        try{
+            marketsArr = json.getJsonArray("markets");
+            markets = parseMarketList(marketsArr,node.getId());
+            node.setMarkets(markets);
+        }
+        catch(Exception exc){
+            try{
+                
+                JsonArray nodesArr = json.getJsonArray("nodes");
+                
+                nodes = parseMarketNodes(nodesArr);
+                node.setNodes(nodes);
+                for(int i = 0;i<nodes.size();i++){
+                    parseNodesRecursively(nodes.get(i), "/marketnavigation"+"/"+nodes.get(i).getId());
+                    num_of_markets++;
+                }
+            }
+            catch(Exception ex){
+                JsonValue nodesArr = json.get("nodes");
+                if(nodesArr==null||JsonValue.ValueType.NULL.equals(nodesArr.getValueType())){return;}
+                throw ex;
+            }
+        }
+    }
+    
+    private void saveOjectLocally(Object obj,String path){
+        try(ObjectOutputStream oo = new ObjectOutputStream(Files.newOutputStream(Paths.get(path)));){
+            oo.writeObject(obj);
+        } 
+        catch (IOException ex) {
+            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    private <T> T readObjectFromFile(Class<T> type, String path){
+        T obj = null;
+        try(ObjectInputStream oi = new ObjectInputStream(Files.newInputStream(Paths.get(path)));){
+            obj = type.cast(oi.readObject());
+        } 
+        catch (IOException | ClassNotFoundException ex) {
+            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return obj;
+    }
+    
     @GET
     @Path("token")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})

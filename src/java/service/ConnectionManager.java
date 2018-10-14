@@ -52,14 +52,14 @@ public class ConnectionManager {
     private final HashMap<String,List<HttpURLConnection>> CONNECTIONS = new HashMap<>();
     
     public ConnectionManager(){
-        try{
-            Files.deleteIfExists(Paths.get("c:/logs/TraceLog.txt"));
-            trcLog=Files.createFile(Paths.get("c:/logs/TraceLog.txt")).toFile();
-            trcLog.setWritable(true);
-            System.setOut(new PrintStream(trcLog));
-        } catch (IOException ex) {
-            Logger.getLogger(AbstractService.class.getName()).log(Level.SEVERE, null, ex);
-        }
+//        try{
+//            Files.deleteIfExists(Paths.get("c:/logs/TraceLog.txt"));
+//            trcLog=Files.createFile(Paths.get("c:/logs/TraceLog.txt")).toFile();
+//            trcLog.setWritable(true);
+//            System.setOut(new PrintStream(trcLog));
+//        } catch (IOException ex) {
+//            Logger.getLogger(AbstractService.class.getName()).log(Level.SEVERE, null, ex);
+//        }
     }
     
     @PostConstruct
@@ -85,8 +85,8 @@ public class ConnectionManager {
             String ep = endpoint;
             if(baseUrl.endsWith("/")&&endpoint.startsWith("/")){ep=endpoint.substring(1);}
             version=propsVersions.getProperty(endpoint.substring(1).replace('/', '.').replace("{", "").replace("}", "")+"."+method.trim().toUpperCase(),"1");
-            p("about to open connection");
-            p("url = "+baseUrl+ep);
+//            p("about to open connection");
+//            p("url = "+baseUrl+ep);
             connection =(HttpURLConnection)(new URL(baseUrl+ep)).openConnection();
             if(connection==null){
                 p("error: no connection to remote server");
@@ -100,8 +100,8 @@ public class ConnectionManager {
                 connection.setRequestProperty("VERSION", version);
                 connection.setRequestProperty("Content-Type", "application/json");
                 connection.setRequestProperty("Accept", "application/json");
-                p("key: "+key);
-                p("endpoint: "+endpoint+" method: "+method+" version: "+version);
+//                p("key: "+key);
+//                p("endpoint: "+endpoint+" method: "+method+" version: "+version);
                 this.p("connection properties set");
                 boolean isLogin = "POST".equals(method.toUpperCase())&&"/session".equals(endpoint);
                 if(!isLogin){
@@ -111,10 +111,10 @@ public class ConnectionManager {
 //                    connection.setRequestProperty("Authorization", session.getOauthToken().getAccess_token());
                     connection.setRequestProperty("CST", cst);
                     connection.setRequestProperty("X-SECURITY-TOKEN", x_security_token);
-                    p("IG-ACCOUNT-ID: "+ session.getAccountId());
-                    p("Authorization: " +session.getOauthToken().getAccess_token());
-                    p("CST: "+cst);
-                    p("X-SECURITY-TOKEN: "+x_security_token);
+//                    p("IG-ACCOUNT-ID: "+ session.getAccountId());
+//                    p("Authorization: " +session.getOauthToken().getAccess_token());
+//                    p("CST: "+cst);
+//                    p("X-SECURITY-TOKEN: "+x_security_token);
                 }
                 if(json!=null){
                     connection.setDoOutput(true);
@@ -136,18 +136,17 @@ public class ConnectionManager {
                     p("about to read from remote");
                     while((c=in.read())!=-1){b.append((char)c);}
                     res=b.toString();
-                }catch(Exception exc){p("problem with in stream: "+exc.toString());}
-                p("read from remote = "+res.length());
+                }catch(Exception exc){throw new RuntimeException("problem with in stream: "+exc.toString());}
                 if(isLogin){
                     cst = connection.getHeaderField("cst");
-                    if(cst==null)connection.getHeaderField("CST");
+//                    if(cst==null)connection.getHeaderField("CST");
                     x_security_token = connection.getHeaderField("x-security-token");
-                    if(x_security_token==null)connection.getHeaderField("X-SECURITY-TOKEN");
-                    p("Get Header CST: "+cst);
-                    p("Get Header X-SECURITY-TOKEN: "+x_security_token);
+//                    if(x_security_token==null)connection.getHeaderField("X-SECURITY-TOKEN");
+//                    p("Get Header CST: "+cst);
+//                    p("Get Header X-SECURITY-TOKEN: "+x_security_token);
                     if(res==null||res.length()<2){throw new RuntimeException("no response after login");}
                 }
-                p("the res value is = "+res);
+//                p("the res value is = "+res);
             }
         } catch (FileNotFoundException ex) {
             Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
@@ -279,8 +278,8 @@ public class ConnectionManager {
     
     
     public void p(Object o){
-        System.out.println(o.toString().toUpperCase());
-    };
+//        System.out.println(o.toString().toUpperCase());
+            };
     
     
 }
