@@ -143,6 +143,7 @@ public class IgAccessService {
 //                cm.p(nodesArr==null?"no node array":"node array collected:\n"+nodesArr);
                 nodes = parseMarketNodes(nodesArr);
 //                cm.p("nodes_list size: "+nodes.size());
+                saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketNavigation/topNodes.ig");
                 for(int i = 0;i<nodes.size();i++){
                     parseNodesRecursively(nodes.get(i), "/marketnavigation"+"/"+nodes.get(i).getId());
                     num_of_markets++;
@@ -165,7 +166,7 @@ public class IgAccessService {
     }
     
     private void parseNodesRecursively(MarketNode node,String endpoint){
-        try{Thread.sleep(500);} catch (InterruptedException ex) {
+        try{Thread.sleep(600);} catch (InterruptedException ex) {
             Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
         }
         String resp = cm.createConnection("GET", endpoint, null);
@@ -186,16 +187,18 @@ public class IgAccessService {
                 JsonArray nodesArr = json.getJsonArray("nodes");
                 
                 nodes = parseMarketNodes(nodesArr);
+                saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketnavigation/"+node.getName()+"."+node.getId()+".ig");
                 node.setNodes(nodes);
                 for(int i = 0;i<nodes.size();i++){
-                    parseNodesRecursively(nodes.get(i), "/marketnavigation"+"/"+nodes.get(i).getId());
+                    parseNodesRecursively(nodes.get(i), "/marketnavigation/"+nodes.get(i).getId());
+                    
                     num_of_markets++;
                 }
             }
             catch(Exception ex){
                 JsonValue nodesArr = json.get("nodes");
-                if(nodesArr==null||JsonValue.ValueType.NULL.equals(nodesArr.getValueType())){return;}
-                throw ex;
+                if(nodesArr==null||JsonValue.ValueType.NULL.equals(nodesArr.getValueType())){}
+                else throw ex;
             }
         }
     }
