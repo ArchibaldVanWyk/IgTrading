@@ -5,11 +5,13 @@
  */
 package trading;
 
+import java.io.Serializable;
+
 
 /**
  *
  * @author Archie
  */
-public class LowPrice extends Price{
+public class LowPrice extends Price implements Serializable{
     
 }

@@ -5,13 +5,14 @@
  */
 package trading;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  *
  * @author Archie
  */
-public class MarketNode {
+public class MarketNode implements Serializable{
     
     private List<Market> markets;
     private List<MarketNode> nodes;

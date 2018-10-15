@@ -5,12 +5,14 @@
  */
 package trading;
 
+import java.io.Serializable;
+
 
 /**
  *
  * @author Archie
  */
-public class Position {
+public class Position implements Serializable{
     
     private Market market;
     private double contractSize;

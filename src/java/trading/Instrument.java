@@ -5,6 +5,7 @@
  */
 package trading;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
@@ -12,7 +13,7 @@ import java.util.List;
  *
  * @author Archie
  */
-public class Instrument {
+public class Instrument implements Serializable{
     
     
     private String chartCode;

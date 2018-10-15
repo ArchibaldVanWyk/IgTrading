@@ -5,6 +5,7 @@
  */
 package trading;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 
@@ -12,7 +13,7 @@ import java.util.Arrays;
  *
  * @author Archie
  */
-public class Snapshot {
+public class Snapshot implements Serializable{
     
     private double bid;
     private double binaryOdds;

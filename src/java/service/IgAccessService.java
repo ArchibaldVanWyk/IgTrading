@@ -132,41 +132,42 @@ public class IgAccessService {
 //        cm.p(json);
         JsonArray marketsArr = null;
         JsonArray nodesArr = null;
+        
+
         try{
-            marketsArr = json.getJsonArray("markets");
-            markets = parseMarketList(marketsArr,nodeId);
+            if(json.get("markets").getValueType().equals(JsonValue.ValueType.ARRAY)){
+                marketsArr = json.getJsonArray("markets");
+                markets = parseMarketList(marketsArr,nodeId);
+                saveOjectLocally(markets, "C:/GitRepositories/IgTrading/marketnavigation/markets/nullMkt.mkt");
+            }
+            else if(json.get("nodes").getValueType().equals(JsonValue.ValueType.ARRAY)){
+    //                cm.p(marketsArr==null?"no market array":"market array collected:\n"+marketsArr);
+                    nodesArr = json.getJsonArray("nodes");
+    //                cm.p(nodesArr==null?"no node array":"node array collected:\n"+nodesArr);
+                    nodes = parseMarketNodes(nodesArr);
+    //                cm.p("nodes_list size: "+nodes.size());
+                    saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketNavigation/topNodes.ig");
+                    for(int i = 0;i<nodes.size();i++){
+                        parseNodesRecursively(nodes.get(i), "/marketnavigation"+"/"+nodes.get(i).getId());
+                        
+                    }
+    //                cm.p("number of markets parsed = "+num_of_markets);
+            }
         }
         catch(Exception exc){
-            try{
-//                cm.p(marketsArr==null?"no market array":"market array collected:\n"+marketsArr);
-                nodesArr = json.getJsonArray("nodes");
-//                cm.p(nodesArr==null?"no node array":"node array collected:\n"+nodesArr);
-                nodes = parseMarketNodes(nodesArr);
-//                cm.p("nodes_list size: "+nodes.size());
-                saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketNavigation/topNodes.ig");
-                for(int i = 0;i<nodes.size();i++){
-                    parseNodesRecursively(nodes.get(i), "/marketnavigation"+"/"+nodes.get(i).getId());
-                    num_of_markets++;
-                }
-//                cm.p("number of markets parsed = "+num_of_markets);
-            }
-            catch(Exception ex){
-                throw ex;
-            }
+            throw exc;
         }
-        if(resp==null||resp.length()<3){resp="no data";}
-        cm.p("number of markets parsed = "+num_of_markets);
+        
+        
         if(nodes!=null&&nodes.size()>0){
-            cm.p("about to save market object locally");
-            this.saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketNavigation/"+"marketNavData.ig");
-            cm.p("Data saved to "+"C:/GitRepositories/IgTrading/marketNavigation/"+"marketNavData.ig");
-            return "Local Market is ready";
+            resp = "Local Market is ready";
         }
+        else{resp = "something went wrong";}
         return resp;
     }
     
     private void parseNodesRecursively(MarketNode node,String endpoint){
-        try{Thread.sleep(600);} catch (InterruptedException ex) {
+        try{Thread.sleep(1200);} catch (InterruptedException ex) {
             Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
         }
         String resp = cm.createConnection("GET", endpoint, null);
@@ -175,31 +176,30 @@ public class IgAccessService {
         
         JsonObject json = Json.createReader(new StringReader(resp)).readObject();
         
-        JsonArray marketsArr = null;
+        
         try{
-            marketsArr = json.getJsonArray("markets");
-            markets = parseMarketList(marketsArr,node.getId());
-            node.setMarkets(markets);
-        }
-        catch(Exception exc){
-            try{
-                
-                JsonArray nodesArr = json.getJsonArray("nodes");
-                
-                nodes = parseMarketNodes(nodesArr);
-                saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketnavigation/"+node.getName()+"."+node.getId()+".ig");
+            JsonValue marketsArr = json.get("markets");
+            JsonValue nodesArr = json.get("nodes");
+            if(marketsArr!=null&&marketsArr.getValueType().equals(JsonValue.ValueType.ARRAY)){
+                JsonArray marketsArray = json.getJsonArray("markets");
+                markets = parseMarketList((JsonArray)marketsArray,node.getId());
+                node.setMarkets(markets);
+                String name = node.getName().replace("/", ".").replace("\\", ".");
+                saveOjectLocally(markets, "C:/GitRepositories/IgTrading/marketnavigation/markets/"+name+"."+node.getId()+".mkt");
+            }
+            else if(nodesArr!=null&&nodesArr.getValueType().equals(JsonValue.ValueType.ARRAY)){
+                JsonArray nodesArray = json.getJsonArray("nodes");
+                nodes = parseMarketNodes(nodesArray);
+                String name = node.getName().replace("/", ".").replace("\\", ".");
+                saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketnavigation/"+name+"."+node.getId()+".ig");
                 node.setNodes(nodes);
                 for(int i = 0;i<nodes.size();i++){
                     parseNodesRecursively(nodes.get(i), "/marketnavigation/"+nodes.get(i).getId());
-                    
-                    num_of_markets++;
                 }
             }
-            catch(Exception ex){
-                JsonValue nodesArr = json.get("nodes");
-                if(nodesArr==null||JsonValue.ValueType.NULL.equals(nodesArr.getValueType())){}
-                else throw ex;
-            }
+        }
+        catch(Exception exc){
+            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, exc.toString(), exc);
         }
     }
     

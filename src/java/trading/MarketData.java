@@ -5,12 +5,14 @@
  */
 package trading;
 
+import java.io.Serializable;
+
 
 /**
  *
  * @author Archie
  */
-public class MarketData {
+public class MarketData implements Serializable{
     
     private double bid;
     private double delayTime;

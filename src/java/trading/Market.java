@@ -5,12 +5,14 @@
  */
 package trading;
 
+import java.io.Serializable;
+
 
 /**
  *
  * @author Archie
  */
-public class Market {
+public class Market implements Serializable{
     
     
     private DealingRules dealingRules;
