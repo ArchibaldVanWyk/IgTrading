@@ -43,6 +43,7 @@ import trading.MarketNode;
 import trading.Position;
 import trading.Session;
 import trading.Snapshot;
+import trading.Unit;
 
 
 /**
@@ -305,29 +306,64 @@ public class IgAccessService {
     
     private Market parseMarket(JsonObject json, String nodeId){
         
+        JsonObject instrument = json.getJsonObject("instrument");
+        JsonObject dealingRules = json.getJsonObject("dealingRules");
+        JsonObject snapshot = json.getJsonObject("snapshot");
+        
+        
         Market market = new Market();
         market.setNodeId(nodeId);
         DealingRules rules = new DealingRules();
 
         Instrument ins = new Instrument();
-        ins.setEpic(json.getString("epic"));
-        ins.setExpiry(json.getString("expiry"));
-        ins.setName(json.getString("instrumentName"));
-        ins.setLotSize(json.getJsonNumber("lotSize").doubleValue());
-        ins.setScalingFactor(json.getJsonNumber("scalingFactor").doubleValue());
-        ins.setStreamingPricesAvailable(json.getBoolean("streamingPricesAvailable"));
-        ins.setType(json.getString("instrumentType"));
+        
+        Instrument.ExpiryDetails expDetails = new Instrument.ExpiryDetails();
+        Instrument.LimitedRiskPremium limitedRiskPremium = new Instrument.LimitedRiskPremium();
+        Instrument.MarginDepositBand marginDepositBand = new Instrument.MarginDepositBand();
+        Instrument.OpeningHours openingHours = new Instrument.OpeningHours();
+        Instrument.RolloverDetails rolloverDetails = new Instrument.RolloverDetails();
+        Instrument.SlippageFactor slippageFactor =  new Instrument.SlippageFactor();
+        
+        JsonObject expDet = json.getJsonObject("expiryDetails");
+        JsonObject limitedRiskPrem = json.getJsonObject("limitedRiskPremium");
+        JsonObject marginDepositB = json.getJsonObject("marginDepositBand");
+        JsonObject openingHrs = json.getJsonObject("openingHours");
+        JsonObject rolloverDet = json.getJsonObject("rolloverDetails");
+        JsonObject slippageFact = json.getJsonObject("slippageFactor");
+        
+        expDetails.setLastDealingDate(expDet.getString("lastDealingDate"));
+        expDetails.setSettlementInfo(expDet.getString("settlementInfo"));
+        ins.setExpiryDetials(expDetails);
+        
+        limitedRiskPremium.setValue(limitedRiskPrem.getJsonNumber("value").doubleValue());
+        limitedRiskPremium.setUnit(Unit.valueOf(limitedRiskPrem.getString("unit")));
+        ins.setLimitedRiskPrem(limitedRiskPremium);
+        
+        ins.setContractSize(instrument.getString("contractSize"));
+        ins.setChartCode(instrument.getString("chartCode"));
+        ins.setControlledRiskAllowed(instrument.getBoolean("controlledRiskAllowed"));
+        ins.setCountry(instrument.getString("country"));
+        ins.setEpic(instrument.getString("epic"));
+        ins.setExpiry(instrument.getString("expiry"));
+        ins.setName(instrument.getString("instrumentName"));
+        ins.setLotSize(instrument.getJsonNumber("lotSize").doubleValue());
+        ins.setScalingFactor(instrument.getJsonNumber("scalingFactor").doubleValue());
+        ins.setStreamingPricesAvailable(instrument.getBoolean("streamingPricesAvailable"));
+        ins.setType(instrument.getString("instrumentType"));
+        ins.setForceOpenAllowed(instrument.getBoolean("forceOpenAllowed"));
+        ins.setMarketId(instrument.getString("marketId"));
+        
 
         Snapshot ss = new Snapshot();
-        ss.setBid(json.getJsonNumber("bid").doubleValue());
-        ss.setDelayTime(json.getJsonNumber("delayTime").doubleValue());
-        ss.setLow(json.getJsonNumber("low").doubleValue());
-        ss.setOffer(json.getJsonNumber("offer").doubleValue());
-        ss.setNetChange(json.getJsonNumber("netChange").doubleValue());
-        ss.setPercentageChange(json.getJsonNumber("percentageChange").doubleValue());
-        ss.setUpdateTime(json.getString("updateTime"));
-        ss.setUpdateTimeUTC(json.getString("updateTimeUTC"));
-        ss.setMarketStatus(json.getString("marketStatus"));
+        ss.setBid(snapshot.getJsonNumber("bid").doubleValue());
+        ss.setDelayTime(snapshot.getJsonNumber("delayTime").doubleValue());
+        ss.setLow(snapshot.getJsonNumber("low").doubleValue());
+        ss.setOffer(snapshot.getJsonNumber("offer").doubleValue());
+        ss.setNetChange(snapshot.getJsonNumber("netChange").doubleValue());
+        ss.setPercentageChange(snapshot.getJsonNumber("percentageChange").doubleValue());
+        ss.setUpdateTime(snapshot.getString("updateTime"));
+        ss.setUpdateTimeUTC(snapshot.getString("updateTimeUTC"));
+        ss.setMarketStatus(snapshot.getString("marketStatus"));
 
         market.setDealingRules(rules);
         market.setInstrument(ins);
@@ -335,5 +371,7 @@ public class IgAccessService {
         
         return market;
     }
+    
+    
     
 }

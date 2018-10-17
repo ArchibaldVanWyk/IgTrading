@@ -5,6 +5,8 @@
  */
 package trading;
 
+import javax.json.JsonObject;
+
 /**
  *
  * @author Archie

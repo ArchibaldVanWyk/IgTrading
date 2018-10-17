@@ -288,7 +288,7 @@ public class Instrument implements Serializable{
     }
     
     
-    static class SlippageFactor{
+    public static class SlippageFactor{
         private Unit unit;
         private double value;
 
@@ -309,7 +309,7 @@ public class Instrument implements Serializable{
         }
         
     }
-    static class RolloverDetails{
+    public static class RolloverDetails{
         private Unit unit;
         private double value;
 
@@ -330,7 +330,7 @@ public class Instrument implements Serializable{
         }
         
     }
-    static class OpeningHours{
+    public static class OpeningHours{
         
         private List<MarketTime> marketTimes;
 
@@ -343,7 +343,7 @@ public class Instrument implements Serializable{
         }
         
         
-        static class MarketTime{
+        public static class MarketTime{
             private String openTime;
             private String closeTime;
 
@@ -366,7 +366,7 @@ public class Instrument implements Serializable{
         }
     }
     
-    static class MarginDepositBand{
+    public static class MarginDepositBand{
         private String currency;
         private double margin;
         private double bandMax;
@@ -406,7 +406,7 @@ public class Instrument implements Serializable{
         
     }
     
-    static class LimitedRiskPremium{
+    public static class LimitedRiskPremium{
         private Unit unit;
         private double value;
 
@@ -427,7 +427,7 @@ public class Instrument implements Serializable{
         }
         
     }
-    static class ExpiryDetails{
+    public static class ExpiryDetails{
         private String lastDealingDate;
         private String settlementInfo;
 
