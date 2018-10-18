@@ -34,9 +34,11 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import trading.Currency;
 import trading.Deal;
 import trading.DealingRules;
 import trading.Instrument;
+import trading.Instrument.OpeningHours;
 import trading.InstrumentType;
 import trading.Market;
 import trading.MarketNode;
@@ -319,14 +321,14 @@ public class IgAccessService {
         
         Instrument.ExpiryDetails expDetails = new Instrument.ExpiryDetails();
         Instrument.LimitedRiskPremium limitedRiskPremium = new Instrument.LimitedRiskPremium();
-        Instrument.MarginDepositBand marginDepositBand = new Instrument.MarginDepositBand();
-        Instrument.OpeningHours openingHours = new Instrument.OpeningHours();
         Instrument.RolloverDetails rolloverDetails = new Instrument.RolloverDetails();
         Instrument.SlippageFactor slippageFactor =  new Instrument.SlippageFactor();
         
         JsonObject expDet = json.getJsonObject("expiryDetails");
         JsonObject limitedRiskPrem = json.getJsonObject("limitedRiskPremium");
-        JsonObject marginDepositB = json.getJsonObject("marginDepositBand");
+        JsonArray marginDepositBs = json.getJsonArray("marginDepositBand");
+        JsonArray currencies = json.getJsonArray("currencies");
+        JsonArray specialInfo = json.getJsonArray("specialInfo");
         JsonObject openingHrs = json.getJsonObject("openingHours");
         JsonObject rolloverDet = json.getJsonObject("rolloverDetails");
         JsonObject slippageFact = json.getJsonObject("slippageFactor");
@@ -338,6 +340,19 @@ public class IgAccessService {
         limitedRiskPremium.setValue(limitedRiskPrem.getJsonNumber("value").doubleValue());
         limitedRiskPremium.setUnit(Unit.valueOf(limitedRiskPrem.getString("unit")));
         ins.setLimitedRiskPrem(limitedRiskPremium);
+        
+        rolloverDetails.setLastRolloverTime(rolloverDet.getString("lastRolloverTime"));
+        rolloverDetails.setRolloverInfo(rolloverDet.getString("rolloverInfo"));
+        ins.setRolloverDetails(rolloverDetails);
+        
+        slippageFactor.setUnit(Unit.valueOf(slippageFact.getString("unit")));
+        slippageFactor.setValue(slippageFact.getJsonNumber("value").doubleValue());
+        ins.setSlippageFactor(slippageFactor);
+        
+        ins.setMarginDepBands(parseMarginDepBands(marginDepositBs));
+        ins.setCurrencies(parseCurrencies(currencies));
+        ins.setSpecialInfo(parseSpecialinfo(specialInfo));
+        ins.setOpeningHours(parseOpeningHours(openingHrs));
         
         ins.setContractSize(instrument.getString("contractSize"));
         ins.setChartCode(instrument.getString("chartCode"));
@@ -352,6 +367,13 @@ public class IgAccessService {
         ins.setType(instrument.getString("instrumentType"));
         ins.setForceOpenAllowed(instrument.getBoolean("forceOpenAllowed"));
         ins.setMarketId(instrument.getString("marketId"));
+        ins.setMarginFactor(instrument.getJsonNumber("marginFactor").doubleValue());
+        ins.setMarginFactorUnit(Unit.valueOf(instrument.getString("marginFactorUnit")));
+        ins.setNewsCode(instrument.getString("newsCode"));
+        ins.setOnePipMeans(instrument.getString("onePipMeans"));
+        ins.setSprintMarketsMaximumExpiryTime(instrument.getJsonNumber("sprintMarketsMaximumExpiryTime").doubleValue());
+        ins.setSprintMarketsMinimumExpiryTime(instrument.getJsonNumber("sprintMarketsMinimumExpiryTime").doubleValue());
+        ins.setStopLimitsAllowed(instrument.getBoolean("stopsLimitsAllowed"));
         
 
         Snapshot ss = new Snapshot();
@@ -372,6 +394,66 @@ public class IgAccessService {
         return market;
     }
     
+    private List<Instrument.MarginDepositBand> parseMarginDepBands(JsonArray marginDepositBs){
+        if(marginDepositBs==null){throw new RuntimeException("JsonArray passed is null");}
+        if(!marginDepositBs.getValueType().equals(JsonValue.ValueType.ARRAY)){throw new RuntimeException("JsonValue passed is not a JsonArray");}
+        List<Instrument.MarginDepositBand> bands = new ArrayList<>(marginDepositBs.size());
+        Instrument.MarginDepositBand band;
+        JsonObject obj;
+        for(int i = 0;i<marginDepositBs.size();i++){
+            band = new Instrument.MarginDepositBand();
+            obj = marginDepositBs.getJsonObject(i);
+            band.setBandMax(obj.getJsonNumber("max").doubleValue());
+            band.setBandMin(obj.getJsonNumber("min").doubleValue());
+            band.setCurrency(obj.getString("currency"));
+            band.setMargin(obj.getJsonNumber("margin").doubleValue());
+        }
+        return bands;
+    }
+    private List<Currency> parseCurrencies(JsonArray currencies){
+        if(currencies==null){throw new RuntimeException("JsonArray passed is null");}
+        if(!currencies.getValueType().equals(JsonValue.ValueType.ARRAY)){throw new RuntimeException("JsonValue passed is not a JsonArray");}
+        List<Currency> currs = new ArrayList<>(currencies.size());
+        Currency curr;
+        JsonObject obj;
+        for(int i = 0;i<currencies.size();i++){
+            curr = new Currency();
+            obj = currencies.getJsonObject(i);
+            curr.setBaseExchangeRate(obj.getJsonNumber("baseExchangeRate").doubleValue());
+            curr.setCode(obj.getString("code"));
+            curr.setExchangeRate(obj.getJsonNumber("exchangeRate").doubleValue());
+            curr.setIsDefault(obj.getBoolean("isDefault"));
+            curr.setSymbol(obj.getString("symbol"));
+        }
+        return currs;
+    }
     
+    private List<String> parseSpecialinfo(JsonArray infoArray){
+        if(infoArray==null){throw new RuntimeException("JsonArray passed is null");}
+        if(!infoArray.getValueType().equals(JsonValue.ValueType.ARRAY)){throw new RuntimeException("JsonValue passed is not a JsonArray");}
+        List<String> infos = new ArrayList<>(infoArray.size());
+        for(int i = 0;i<infoArray.size();i++){
+            infos.add(infoArray.getString(i));
+        }
+        return infos;
+    }
+    
+    private Instrument.OpeningHours parseOpeningHours(JsonObject obj){
+        if(obj==null){throw new RuntimeException("JsonObject passed is null");}
+        Instrument.OpeningHours openHrs = new Instrument.OpeningHours();
+        JsonArray marketTimes=obj.getJsonArray("marketTimes");
+        List<OpeningHours.MarketTime> times = new ArrayList<>(marketTimes.size());
+        JsonObject jo;
+        OpeningHours.MarketTime time;
+        for(int i = 0;i<marketTimes.size();i++){
+            jo=marketTimes.getJsonObject(i);
+            time = new OpeningHours.MarketTime();
+            time.setCloseTime(jo.getString("closeTime"));
+            time.setOpenTime(jo.getString("openTime"));
+            times.add(time);
+        }
+        openHrs.setMarketTimes(times);
+        return openHrs;
+    }
     
 }

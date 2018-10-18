@@ -310,23 +310,23 @@ public class Instrument implements Serializable{
         
     }
     public static class RolloverDetails{
-        private Unit unit;
-        private double value;
+        private String lastRolloverTime;
+        private String rolloverInfo;
 
-        public Unit getUnit() {
-            return unit;
+        public String getLastRolloverTime() {
+            return lastRolloverTime;
         }
 
-        public void setUnit(Unit unit) {
-            this.unit = unit;
+        public void setLastRolloverTime(String lastRolloverTime) {
+            this.lastRolloverTime = lastRolloverTime;
         }
 
-        public double getValue() {
-            return value;
+        public String getRolloverInfo() {
+            return rolloverInfo;
         }
 
-        public void setValue(double value) {
-            this.value = value;
+        public void setRolloverInfo(String rolloverInfo) {
+            this.rolloverInfo = rolloverInfo;
         }
         
     }
