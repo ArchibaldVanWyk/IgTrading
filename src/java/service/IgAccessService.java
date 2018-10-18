@@ -315,8 +315,20 @@ public class IgAccessService {
         
         Market market = new Market();
         market.setNodeId(nodeId);
+        
         DealingRules rules = new DealingRules();
-
+        
+        rules.setMarketOrderPref(DealingRules.MarketOrderPreference.valueOf(dealingRules.getString("marketOrderPreference")));
+        
+        rules.setMaxStopOrLimitDistance(dealingRules.getJsonNumber("maxStopOrLimitDistance").doubleValue());
+        rules.setMinControlledRiskStopDistance(dealingRules.getJsonNumber("minControlledRiskStopDistance").doubleValue());
+        rules.setMinDealSize(dealingRules.getJsonNumber("minDealSize").doubleValue());
+        rules.setMinNormalStopOrLimitDistance(dealingRules.getJsonNumber("minNormalStopOrLimitDistance").doubleValue());
+        rules.setMinStepDistance(dealingRules.getJsonNumber("minStepDistance").doubleValue());
+        rules.setTrailingStopsPref(DealingRules.TrailingStopsPref.valueOf("trailingStopsPreference"));
+        
+        
+        
         Instrument ins = new Instrument();
         
         Instrument.ExpiryDetails expDetails = new Instrument.ExpiryDetails();
