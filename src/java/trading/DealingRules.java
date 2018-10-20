@@ -60,11 +60,11 @@ public class DealingRules implements Serializable{
         this.minNormalStopOrLimitDistance_unit = minNormalStopOrLimitDistance_unit;
     }
 
-    public DealingRuleUnit getMinStopDistance_unit() {
+    public DealingRuleUnit getMinStepDistance_unit() {
         return minStopDistance_unit;
     }
 
-    public void setMinStopDistance_unit(DealingRuleUnit minStopDistance_unit) {
+    public void setMinStepDistance_unit(DealingRuleUnit minStopDistance_unit) {
         this.minStopDistance_unit = minStopDistance_unit;
     }
 

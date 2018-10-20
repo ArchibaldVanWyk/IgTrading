@@ -19,6 +19,7 @@ public class Snapshot implements Serializable{
     private double binaryOdds;
     private double controlledRiskExtraSpread;
     private int decimalPlacesFactor;
+    private double scalingFactor;
     private double delayTime;
     private double high;
     private double low;
@@ -28,6 +29,14 @@ public class Snapshot implements Serializable{
     private double percentageChange;
     private String updateTime;
     private String updateTimeUTC;
+
+    public double getScalingFactor() {
+        return scalingFactor;
+    }
+
+    public void setScalingFactor(double scalingFactor) {
+        this.scalingFactor = scalingFactor;
+    }
 
     public String getUpdateTimeUTC() {
         return updateTimeUTC;
@@ -97,8 +106,8 @@ public class Snapshot implements Serializable{
         return marketStatus;
     }
 
-    public void setMarketStatus(String marketStatus) {
-        this.marketStatus=Arrays.stream(MarketStatus.values()).filter(c->c.toString().equals(marketStatus)).findFirst().get();
+    public void setMarketStatus(MarketStatus marketStatus) {
+        this.marketStatus=marketStatus;
     }
 
     public double getNetChange() {

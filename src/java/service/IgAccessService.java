@@ -42,6 +42,7 @@ import trading.Instrument.OpeningHours;
 import trading.InstrumentType;
 import trading.Market;
 import trading.MarketNode;
+import trading.MarketStatus;
 import trading.Position;
 import trading.Session;
 import trading.Snapshot;
@@ -320,14 +321,18 @@ public class IgAccessService {
         
         rules.setMarketOrderPref(DealingRules.MarketOrderPreference.valueOf(dealingRules.getString("marketOrderPreference")));
         
-        rules.setMaxStopOrLimitDistance(dealingRules.getJsonNumber("maxStopOrLimitDistance").doubleValue());
-        rules.setMinControlledRiskStopDistance(dealingRules.getJsonNumber("minControlledRiskStopDistance").doubleValue());
-        rules.setMinDealSize(dealingRules.getJsonNumber("minDealSize").doubleValue());
-        rules.setMinNormalStopOrLimitDistance(dealingRules.getJsonNumber("minNormalStopOrLimitDistance").doubleValue());
-        rules.setMinStepDistance(dealingRules.getJsonNumber("minStepDistance").doubleValue());
-        rules.setTrailingStopsPref(DealingRules.TrailingStopsPref.valueOf("trailingStopsPreference"));
+        rules.setMaxStopOrLimitDistance(dealingRules.getJsonObject("maxStopOrLimitDistance").getJsonNumber("value").doubleValue());
+        rules.setMinControlledRiskStopDistance(dealingRules.getJsonObject("minControlledRiskStopDistance").getJsonNumber("value").doubleValue());
+        rules.setMinDealSize(dealingRules.getJsonObject("minDealSize").getJsonNumber("value").doubleValue());
+        rules.setMinNormalStopOrLimitDistance(dealingRules.getJsonObject("minNormalStopOrLimitDistance").getJsonNumber("value").doubleValue());
+        rules.setMinStepDistance(dealingRules.getJsonObject("minStepDistance").getJsonNumber("value").doubleValue());
+        rules.setTrailingStopsPref(DealingRules.TrailingStopsPref.valueOf(dealingRules.getString("trailingStopsPreference")));
         
-        
+        rules.setMaxStopOrLimitDistance_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("maxStopOrLimitDistance").getString("unit")));
+        rules.setMinControlledRiskStopDistance_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("minControlledRiskStopDistance").getString("unit")));
+        rules.setMinDealSize_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("minDealSize").getString("unit")));
+        rules.setMinNormalStopOrLimitDistance_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("minNormalStopOrLimitDistance").getString("unit")));
+        rules.setMinStepDistance_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("minStepDistance").getString("unit")));
         
         Instrument ins = new Instrument();
         
@@ -391,13 +396,20 @@ public class IgAccessService {
         Snapshot ss = new Snapshot();
         ss.setBid(snapshot.getJsonNumber("bid").doubleValue());
         ss.setDelayTime(snapshot.getJsonNumber("delayTime").doubleValue());
+        ss.setHigh(snapshot.getJsonNumber("high").doubleValue());
         ss.setLow(snapshot.getJsonNumber("low").doubleValue());
         ss.setOffer(snapshot.getJsonNumber("offer").doubleValue());
         ss.setNetChange(snapshot.getJsonNumber("netChange").doubleValue());
         ss.setPercentageChange(snapshot.getJsonNumber("percentageChange").doubleValue());
         ss.setUpdateTime(snapshot.getString("updateTime"));
-        ss.setUpdateTimeUTC(snapshot.getString("updateTimeUTC"));
-        ss.setMarketStatus(snapshot.getString("marketStatus"));
+//        ss.setUpdateTimeUTC(snapshot.getString("updateTimeUTC"));
+        ss.setDelayTime(snapshot.getJsonNumber("delayTime").doubleValue());
+        ss.setMarketStatus(MarketStatus.valueOf(snapshot.getString("marketStatus")));
+        ss.setDecimalPlacesFactor(snapshot.getInt("decimalPlacesFactor"));
+        ss.setBinaryOdds(snapshot.getJsonNumber("binaryOdds").doubleValue());
+        ss.setControlledRiskExtraSpread(snapshot.getJsonNumber("controlledRiskExtraSpread ").doubleValue());
+        ss.setScalingFactor(snapshot.getJsonNumber("scalingFactor").doubleValue());
+        
 
         market.setDealingRules(rules);
         market.setInstrument(ins);
@@ -466,6 +478,11 @@ public class IgAccessService {
         }
         openHrs.setMarketTimes(times);
         return openHrs;
+    }
+    
+    private DealingRules parseDealingRules(JsonObject dealingrules){
+        
+        return null;
     }
     
 }
