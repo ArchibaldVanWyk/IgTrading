@@ -123,43 +123,26 @@ public class IgAccessService {
     @Path("marketnavigation")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String marketNavigation(String in){
-//        cm.p(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME).replace("T"," ")+" market navigation");
-//        cm.p("input received = "+in);
-//        cm.p("about to call remote");
         String nodeId=in==null||in.isEmpty()?"":in.trim();
         String resp = cm.createConnection("GET", "/marketnavigation"+"/"+nodeId, null);
         List<Market> markets = null;
         List<MarketNode> nodes = null;
-//        cm.p(resp==null?"no fucking response":"success");
         JsonObject json = Json.createReader(new StringReader(resp)).readObject();
-//        cm.p("json string collected:");
-//        cm.p(json);
-        JsonArray marketsArr = null;
-        JsonArray nodesArr = null;
-        
-
         try{
-            if(json.get("markets").getValueType().equals(JsonValue.ValueType.ARRAY)){
-                marketsArr = json.getJsonArray("markets");
-                markets = parseMarketList(marketsArr,nodeId);
-                saveOjectLocally(markets, "C:/GitRepositories/IgTrading/marketnavigation/markets/nullMkt.mkt");
+            markets = parseMarketList(json,nodeId);
+            if(markets!=null){
+              saveOjectLocally(markets, "C:/GitRepositories/IgTrading/marketnavigation/markets/nullMkt.mkt");  
             }
-            else if(json.get("nodes").getValueType().equals(JsonValue.ValueType.ARRAY)){
-    //                cm.p(marketsArr==null?"no market array":"market array collected:\n"+marketsArr);
-                    nodesArr = json.getJsonArray("nodes");
-    //                cm.p(nodesArr==null?"no node array":"node array collected:\n"+nodesArr);
-                    nodes = parseMarketNodes(nodesArr);
-    //                cm.p("nodes_list size: "+nodes.size());
-                    saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketNavigation/topNodes.ig");
-                    for(int i = 0;i<nodes.size();i++){
-                        parseNodesRecursively(nodes.get(i), "/marketnavigation"+"/"+nodes.get(i).getId());
-                        
-                    }
-    //                cm.p("number of markets parsed = "+num_of_markets);
+            nodes = parseMarketNodes(json);
+            if(nodes!=null){
+                saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketNavigation/topNodes.ig");
+                for(int i = 0;i<nodes.size();i++){
+                    parseNodesRecursively(nodes.get(i), "/marketnavigation"+"/"+nodes.get(i).getId());
+                }
             }
         }
         catch(Exception exc){
-            throw exc;
+            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, exc.toString(), exc);
         }
         
         
@@ -177,25 +160,18 @@ public class IgAccessService {
         String resp = cm.createConnection("GET", endpoint, null);
         List<Market> markets = null;
         List<MarketNode> nodes = null;
-        
         JsonObject json = Json.createReader(new StringReader(resp)).readObject();
-        
-        
         try{
-            JsonValue marketsArr = json.get("markets");
-            JsonValue nodesArr = json.get("nodes");
-            if(marketsArr!=null&&marketsArr.getValueType().equals(JsonValue.ValueType.ARRAY)){
-                JsonArray marketsArray = json.getJsonArray("markets");
-                markets = parseMarketList((JsonArray)marketsArray,node.getId());
+            markets = parseMarketList(json,node.getId());
+            nodes = parseMarketNodes(json);
+            if(markets!=null){
                 node.setMarkets(markets);
-                String name = node.getName().replace("/", ".").replace("\\", ".");
-                saveOjectLocally(markets, "C:/GitRepositories/IgTrading/marketnavigation/markets/"+name+"."+node.getId()+".mkt");
+                String marketname = node.getName().replace("/", ".").replace("\\", ".");
+                saveOjectLocally(markets, "C:/GitRepositories/IgTrading/marketnavigation/markets/"+marketname+"."+node.getId()+".mkt");
             }
-            else if(nodesArr!=null&&nodesArr.getValueType().equals(JsonValue.ValueType.ARRAY)){
-                JsonArray nodesArray = json.getJsonArray("nodes");
-                nodes = parseMarketNodes(nodesArray);
-                String name = node.getName().replace("/", ".").replace("\\", ".");
-                saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketnavigation/"+name+"."+node.getId()+".ig");
+            if(nodes!=null){
+                String nodename = node.getName().replace("/", ".").replace("\\", ".");
+                saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketnavigation/"+nodename+"."+node.getId()+".ig");
                 node.setNodes(nodes);
                 for(int i = 0;i<nodes.size();i++){
                     parseNodesRecursively(nodes.get(i), "/marketnavigation/"+nodes.get(i).getId());
@@ -281,23 +257,36 @@ public class IgAccessService {
         resp=jsonArr.toString();
         return resp;
     }
-    private List<Market> parseMarketList(JsonArray marketsArr, String nodeId){
-        if(marketsArr.isEmpty()){cm.p("market array is empty");return null;}
-        cm.p("market array size to be parsed = "+marketsArr.size());
-        List<Market> markets = new ArrayList<>();
-        for(int i=0;i<marketsArr.size();i++){
-            markets.add(parseMarket(marketsArr.getJsonObject(i),nodeId));
+    private List<Market> parseMarketList(JsonObject obj, String nodeId){
+        JsonValue marketsVal = obj.get("markets");
+        if(marketsVal==null||!marketsVal.getValueType().equals(JsonValue.ValueType.ARRAY)){return null;}
+        else{
+            JsonArray marketsArr = obj.getJsonArray("markets");
+            if(marketsArr==null||!marketsArr.getValueType().equals(JsonValue.ValueType.ARRAY)||marketsArr.size()<1){
+                return null;
+            }
+            List<Market> markets = new ArrayList<>(marketsArr.size());
+            for(int i=0;i<marketsArr.size();i++){
+                try{
+                    markets.add(parseMarket(marketsArr.getJsonObject(i),nodeId));
+                }catch(Exception exc){
+                    throw exc;
+                }
+            }
+            return markets;
         }
-        return markets;
     }
-    private List<MarketNode> parseMarketNodes(JsonArray nodeArr){
-        if(nodeArr==null||nodeArr.isEmpty()){cm.p("node array is empty");return null;}
-        cm.p("node array size to be parsed = "+nodeArr.size());
-        List<MarketNode> nodes = new ArrayList<>();
-        for(int i=0;i<nodeArr.size();i++){
-            nodes.add(parseNode(nodeArr.getJsonObject(i)));
+    private List<MarketNode> parseMarketNodes(JsonObject obj){
+        JsonValue nodesVal = obj.get("nodes");
+        if(nodesVal==null||!nodesVal.getValueType().equals(JsonValue.ValueType.ARRAY)){return null;}
+        else{
+            JsonArray nodeArr = obj.getJsonArray("nodes");
+            List<MarketNode> nodes = new ArrayList<>(nodeArr.size());
+            for(int i=0;i<nodeArr.size();i++){
+                nodes.add(parseNode(nodeArr.getJsonObject(i)));
+            }
+            return nodes;
         }
-        return nodes;
     }
     
     private MarketNode parseNode(JsonObject json){
@@ -308,114 +297,123 @@ public class IgAccessService {
     }
     
     private Market parseMarket(JsonObject json, String nodeId){
-        
-        JsonObject instrument = json.getJsonObject("instrument");
-        JsonObject dealingRules = json.getJsonObject("dealingRules");
-        JsonObject snapshot = json.getJsonObject("snapshot");
-        
-        
-        Market market = new Market();
-        market.setNodeId(nodeId);
-        
-        DealingRules rules = new DealingRules();
-        
-        rules.setMarketOrderPref(DealingRules.MarketOrderPreference.valueOf(dealingRules.getString("marketOrderPreference")));
-        
-        rules.setMaxStopOrLimitDistance(dealingRules.getJsonObject("maxStopOrLimitDistance").getJsonNumber("value").doubleValue());
-        rules.setMinControlledRiskStopDistance(dealingRules.getJsonObject("minControlledRiskStopDistance").getJsonNumber("value").doubleValue());
-        rules.setMinDealSize(dealingRules.getJsonObject("minDealSize").getJsonNumber("value").doubleValue());
-        rules.setMinNormalStopOrLimitDistance(dealingRules.getJsonObject("minNormalStopOrLimitDistance").getJsonNumber("value").doubleValue());
-        rules.setMinStepDistance(dealingRules.getJsonObject("minStepDistance").getJsonNumber("value").doubleValue());
-        rules.setTrailingStopsPref(DealingRules.TrailingStopsPref.valueOf(dealingRules.getString("trailingStopsPreference")));
-        
-        rules.setMaxStopOrLimitDistance_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("maxStopOrLimitDistance").getString("unit")));
-        rules.setMinControlledRiskStopDistance_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("minControlledRiskStopDistance").getString("unit")));
-        rules.setMinDealSize_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("minDealSize").getString("unit")));
-        rules.setMinNormalStopOrLimitDistance_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("minNormalStopOrLimitDistance").getString("unit")));
-        rules.setMinStepDistance_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("minStepDistance").getString("unit")));
-        
-        Instrument ins = new Instrument();
-        
-        Instrument.ExpiryDetails expDetails = new Instrument.ExpiryDetails();
-        Instrument.LimitedRiskPremium limitedRiskPremium = new Instrument.LimitedRiskPremium();
-        Instrument.RolloverDetails rolloverDetails = new Instrument.RolloverDetails();
-        Instrument.SlippageFactor slippageFactor =  new Instrument.SlippageFactor();
-        
-        JsonObject expDet = json.getJsonObject("expiryDetails");
-        JsonObject limitedRiskPrem = json.getJsonObject("limitedRiskPremium");
-        JsonArray marginDepositBs = json.getJsonArray("marginDepositBand");
-        JsonArray currencies = json.getJsonArray("currencies");
-        JsonArray specialInfo = json.getJsonArray("specialInfo");
-        JsonObject openingHrs = json.getJsonObject("openingHours");
-        JsonObject rolloverDet = json.getJsonObject("rolloverDetails");
-        JsonObject slippageFact = json.getJsonObject("slippageFactor");
-        
-        expDetails.setLastDealingDate(expDet.getString("lastDealingDate"));
-        expDetails.setSettlementInfo(expDet.getString("settlementInfo"));
-        ins.setExpiryDetials(expDetails);
-        
-        limitedRiskPremium.setValue(limitedRiskPrem.getJsonNumber("value").doubleValue());
-        limitedRiskPremium.setUnit(Unit.valueOf(limitedRiskPrem.getString("unit")));
-        ins.setLimitedRiskPrem(limitedRiskPremium);
-        
-        rolloverDetails.setLastRolloverTime(rolloverDet.getString("lastRolloverTime"));
-        rolloverDetails.setRolloverInfo(rolloverDet.getString("rolloverInfo"));
-        ins.setRolloverDetails(rolloverDetails);
-        
-        slippageFactor.setUnit(Unit.valueOf(slippageFact.getString("unit")));
-        slippageFactor.setValue(slippageFact.getJsonNumber("value").doubleValue());
-        ins.setSlippageFactor(slippageFactor);
-        
-        ins.setMarginDepBands(parseMarginDepBands(marginDepositBs));
-        ins.setCurrencies(parseCurrencies(currencies));
-        ins.setSpecialInfo(parseSpecialinfo(specialInfo));
-        ins.setOpeningHours(parseOpeningHours(openingHrs));
-        
-        ins.setContractSize(instrument.getString("contractSize"));
-        ins.setChartCode(instrument.getString("chartCode"));
-        ins.setControlledRiskAllowed(instrument.getBoolean("controlledRiskAllowed"));
-        ins.setCountry(instrument.getString("country"));
-        ins.setEpic(instrument.getString("epic"));
-        ins.setExpiry(instrument.getString("expiry"));
-        ins.setName(instrument.getString("instrumentName"));
-        ins.setLotSize(instrument.getJsonNumber("lotSize").doubleValue());
-        ins.setScalingFactor(instrument.getJsonNumber("scalingFactor").doubleValue());
-        ins.setStreamingPricesAvailable(instrument.getBoolean("streamingPricesAvailable"));
-        ins.setType(instrument.getString("instrumentType"));
-        ins.setForceOpenAllowed(instrument.getBoolean("forceOpenAllowed"));
-        ins.setMarketId(instrument.getString("marketId"));
-        ins.setMarginFactor(instrument.getJsonNumber("marginFactor").doubleValue());
-        ins.setMarginFactorUnit(Unit.valueOf(instrument.getString("marginFactorUnit")));
-        ins.setNewsCode(instrument.getString("newsCode"));
-        ins.setOnePipMeans(instrument.getString("onePipMeans"));
-        ins.setSprintMarketsMaximumExpiryTime(instrument.getJsonNumber("sprintMarketsMaximumExpiryTime").doubleValue());
-        ins.setSprintMarketsMinimumExpiryTime(instrument.getJsonNumber("sprintMarketsMinimumExpiryTime").doubleValue());
-        ins.setStopLimitsAllowed(instrument.getBoolean("stopsLimitsAllowed"));
-        
+        if(json.isEmpty()||json.getValueType().equals(JsonValue.ValueType.NULL))return null;
+        boolean hasObjects=json.containsKey("instrument")&&json.containsKey("dealingRules")&&json.containsKey("snapshot");
+        if(!hasObjects)return null;
+        Market market = null;
+        try{
+            JsonObject instrument = json.getJsonObject("instrument");
+            JsonObject dealingRules = json.getJsonObject("dealingRules");
+            JsonObject snapshot = json.getJsonObject("snapshot");
+            
+            if(instrument==null||dealingRules==null||snapshot==null){
+                throw new RuntimeException("Market objects missing");
+            }
 
-        Snapshot ss = new Snapshot();
-        ss.setBid(snapshot.getJsonNumber("bid").doubleValue());
-        ss.setDelayTime(snapshot.getJsonNumber("delayTime").doubleValue());
-        ss.setHigh(snapshot.getJsonNumber("high").doubleValue());
-        ss.setLow(snapshot.getJsonNumber("low").doubleValue());
-        ss.setOffer(snapshot.getJsonNumber("offer").doubleValue());
-        ss.setNetChange(snapshot.getJsonNumber("netChange").doubleValue());
-        ss.setPercentageChange(snapshot.getJsonNumber("percentageChange").doubleValue());
-        ss.setUpdateTime(snapshot.getString("updateTime"));
-//        ss.setUpdateTimeUTC(snapshot.getString("updateTimeUTC"));
-        ss.setDelayTime(snapshot.getJsonNumber("delayTime").doubleValue());
-        ss.setMarketStatus(MarketStatus.valueOf(snapshot.getString("marketStatus")));
-        ss.setDecimalPlacesFactor(snapshot.getInt("decimalPlacesFactor"));
-        ss.setBinaryOdds(snapshot.getJsonNumber("binaryOdds").doubleValue());
-        ss.setControlledRiskExtraSpread(snapshot.getJsonNumber("controlledRiskExtraSpread ").doubleValue());
-        ss.setScalingFactor(snapshot.getJsonNumber("scalingFactor").doubleValue());
-        
+            market = new Market();
+            market.setNodeId(nodeId);
 
-        market.setDealingRules(rules);
-        market.setInstrument(ins);
-        market.setSnapshot(ss);
+            DealingRules rules = new DealingRules();
+
+            rules.setMarketOrderPref(DealingRules.MarketOrderPreference.valueOf(dealingRules.getString("marketOrderPreference")));
+
+            rules.setMaxStopOrLimitDistance(dealingRules.getJsonObject("maxStopOrLimitDistance").getJsonNumber("value").doubleValue());
+            rules.setMinControlledRiskStopDistance(dealingRules.getJsonObject("minControlledRiskStopDistance").getJsonNumber("value").doubleValue());
+            rules.setMinDealSize(dealingRules.getJsonObject("minDealSize").getJsonNumber("value").doubleValue());
+            rules.setMinNormalStopOrLimitDistance(dealingRules.getJsonObject("minNormalStopOrLimitDistance").getJsonNumber("value").doubleValue());
+            rules.setMinStepDistance(dealingRules.getJsonObject("minStepDistance").getJsonNumber("value").doubleValue());
+            rules.setTrailingStopsPref(DealingRules.TrailingStopsPref.valueOf(dealingRules.getString("trailingStopsPreference")));
+
+            rules.setMaxStopOrLimitDistance_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("maxStopOrLimitDistance").getString("unit")));
+            rules.setMinControlledRiskStopDistance_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("minControlledRiskStopDistance").getString("unit")));
+            rules.setMinDealSize_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("minDealSize").getString("unit")));
+            rules.setMinNormalStopOrLimitDistance_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("minNormalStopOrLimitDistance").getString("unit")));
+            rules.setMinStepDistance_unit(DealingRules.DealingRuleUnit.valueOf(dealingRules.getJsonObject("minStepDistance").getString("unit")));
+
+            Instrument ins = new Instrument();
+
+            Instrument.ExpiryDetails expDetails = new Instrument.ExpiryDetails();
+            Instrument.LimitedRiskPremium limitedRiskPremium = new Instrument.LimitedRiskPremium();
+            Instrument.RolloverDetails rolloverDetails = new Instrument.RolloverDetails();
+            Instrument.SlippageFactor slippageFactor =  new Instrument.SlippageFactor();
+
+            JsonObject expDet = json.getJsonObject("expiryDetails");
+            JsonObject limitedRiskPrem = json.getJsonObject("limitedRiskPremium");
+            JsonArray marginDepositBs = json.getJsonArray("marginDepositBand");
+            JsonArray currencies = json.getJsonArray("currencies");
+            JsonArray specialInfo = json.getJsonArray("specialInfo");
+            JsonObject openingHrs = json.getJsonObject("openingHours");
+            JsonObject rolloverDet = json.getJsonObject("rolloverDetails");
+            JsonObject slippageFact = json.getJsonObject("slippageFactor");
+
+            expDetails.setLastDealingDate(expDet.getString("lastDealingDate"));
+            expDetails.setSettlementInfo(expDet.getString("settlementInfo"));
+            ins.setExpiryDetials(expDetails);
+
+            limitedRiskPremium.setValue(limitedRiskPrem.getJsonNumber("value").doubleValue());
+            limitedRiskPremium.setUnit(Unit.valueOf(limitedRiskPrem.getString("unit")));
+            ins.setLimitedRiskPrem(limitedRiskPremium);
+
+            rolloverDetails.setLastRolloverTime(rolloverDet.getString("lastRolloverTime"));
+            rolloverDetails.setRolloverInfo(rolloverDet.getString("rolloverInfo"));
+            ins.setRolloverDetails(rolloverDetails);
+
+            slippageFactor.setUnit(Unit.valueOf(slippageFact.getString("unit")));
+            slippageFactor.setValue(slippageFact.getJsonNumber("value").doubleValue());
+            ins.setSlippageFactor(slippageFactor);
+
+            ins.setMarginDepBands(parseMarginDepBands(marginDepositBs));
+            ins.setCurrencies(parseCurrencies(currencies));
+            ins.setSpecialInfo(parseSpecialinfo(specialInfo));
+            ins.setOpeningHours(parseOpeningHours(openingHrs));
+
+            ins.setContractSize(instrument.getString("contractSize"));
+            ins.setChartCode(instrument.getString("chartCode"));
+            ins.setControlledRiskAllowed(instrument.getBoolean("controlledRiskAllowed"));
+            ins.setCountry(instrument.getString("country"));
+            ins.setEpic(instrument.getString("epic"));
+            ins.setExpiry(instrument.getString("expiry"));
+            ins.setName(instrument.getString("instrumentName"));
+            ins.setLotSize(instrument.getJsonNumber("lotSize").doubleValue());
+            ins.setScalingFactor(instrument.getJsonNumber("scalingFactor").doubleValue());
+            ins.setStreamingPricesAvailable(instrument.getBoolean("streamingPricesAvailable"));
+            ins.setType(instrument.getString("instrumentType"));
+            ins.setForceOpenAllowed(instrument.getBoolean("forceOpenAllowed"));
+            ins.setMarketId(instrument.getString("marketId"));
+            ins.setMarginFactor(instrument.getJsonNumber("marginFactor").doubleValue());
+            ins.setMarginFactorUnit(Unit.valueOf(instrument.getString("marginFactorUnit")));
+            ins.setNewsCode(instrument.getString("newsCode"));
+            ins.setOnePipMeans(instrument.getString("onePipMeans"));
+            ins.setSprintMarketsMaximumExpiryTime(instrument.getJsonNumber("sprintMarketsMaximumExpiryTime").doubleValue());
+            ins.setSprintMarketsMinimumExpiryTime(instrument.getJsonNumber("sprintMarketsMinimumExpiryTime").doubleValue());
+            ins.setStopLimitsAllowed(instrument.getBoolean("stopsLimitsAllowed"));
+
+
+            Snapshot ss = new Snapshot();
+            ss.setBid(snapshot.getJsonNumber("bid").doubleValue());
+            ss.setDelayTime(snapshot.getJsonNumber("delayTime").doubleValue());
+            ss.setHigh(snapshot.getJsonNumber("high").doubleValue());
+            ss.setLow(snapshot.getJsonNumber("low").doubleValue());
+            ss.setOffer(snapshot.getJsonNumber("offer").doubleValue());
+            ss.setNetChange(snapshot.getJsonNumber("netChange").doubleValue());
+            ss.setPercentageChange(snapshot.getJsonNumber("percentageChange").doubleValue());
+            ss.setUpdateTime(snapshot.getString("updateTime"));
+            ss.setDelayTime(snapshot.getJsonNumber("delayTime").doubleValue());
+            ss.setMarketStatus(MarketStatus.valueOf(snapshot.getString("marketStatus")));
+            ss.setDecimalPlacesFactor(snapshot.getInt("decimalPlacesFactor"));
+            ss.setBinaryOdds(snapshot.getJsonNumber("binaryOdds").doubleValue());
+            ss.setControlledRiskExtraSpread(snapshot.getJsonNumber("controlledRiskExtraSpread ").doubleValue());
+            ss.setScalingFactor(snapshot.getJsonNumber("scalingFactor").doubleValue());
+
+
+            market.setDealingRules(rules);
+            market.setInstrument(ins);
+            market.setSnapshot(ss);
+            return market;
+        }catch(Exception exc){
+            throw exc;
+        }
         
-        return market;
     }
     
     private List<Instrument.MarginDepositBand> parseMarginDepBands(JsonArray marginDepositBs){
