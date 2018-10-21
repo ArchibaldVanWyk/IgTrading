@@ -5,6 +5,7 @@
  */
 package service;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
@@ -14,12 +15,15 @@ import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.json.Json;
@@ -119,9 +123,7 @@ public class IgAccessService {
 //        auth.setScope(json.getString("scope"));
 //        auth.setToken_type(json.getString("token_type"));
 //    }
-    @GET
-    @Path("marketnavigation")
-    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    
     public String marketNavigation(String in){
         String nodeId=in==null||in.isEmpty()?"":in.trim();
         String resp = cm.createConnection("GET", "/marketnavigation"+"/"+nodeId, null);
@@ -191,6 +193,68 @@ public class IgAccessService {
             Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    @GET
+    @Path("marketnavigation")
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String packageNodes(String dirpath){
+        File nodesdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation").toFile();
+        File marketsdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets").toFile();
+        File rootNode = Paths.get("C:/GitRepositories/IgTrading/marketNavigation/topNodes.ig").toFile();
+        packageNodesRecursively(rootNode,nodesdir, marketsdir);
+        return "packaging done";
+    }
+    
+    private void packageNodesRecursively(File root,File nodesdir,File marketsdir){
+        List<MarketNode> subNodes = (List<MarketNode>)readObjectFromFile(ArrayList.class, root.getAbsolutePath());
+        //List<Market> nodeMarkets = rootNode.getMarkets();
+        List<String> subNodeIds = subNodes!=null&&subNodes.size()>0?subNodes.stream().map(n->n.getId()).collect(Collectors.toList()):null;
+        //List<String> mktNodeIds = nodeMarkets!=null&&nodeMarkets.size()>0?nodeMarkets.stream().map(m->m.getNodeId()).collect(Collectors.toList()):null;
+        File[] nodefiles=null;System.out.println(subNodeIds);
+        if(subNodeIds!=null){
+            nodefiles = nodesdir.listFiles(f->{
+                boolean b = f.getName().endsWith(".ig")&&!"topNodes.ig".equals(f.getName()); 
+                if(b){
+                    String[]  ps = f.getName().split("[.]");
+                    String id = ps[ps.length-2];
+                    System.out.println("ID="+id+" "+(b&&subNodeIds.contains(id)));
+                    return b&&subNodeIds.contains(id);
+                }
+                else{
+                    return false;
+                }
+                
+            });
+            if(nodefiles.length<1){throw new RuntimeException("Nodefiles missing");}
+            File d = new File(root.getParent()+"/"+root.getName().split(".ig")[0]+"/nodes");
+            d.mkdir();
+            for(File nodefile : nodefiles){
+                try {
+                    Files.move(nodefile.toPath(),Paths.get(d.getAbsolutePath()+"/"+nodefile.getName()),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException ex) {
+                    Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                String[]  ps = nodefile.getName().split("[.]");
+                String id = ps[ps.length-2];
+                File[] marketfiles = marketsdir.listFiles(f->{
+                    boolean b = f.getName().endsWith(".mkt")&&f.getName().contains(id);
+                    return b;
+                });
+                if(marketfiles!=null){
+                    File md = new File(nodefile.getParent()+"/"+nodefile.getName().split(".ig")[0]+"/markets");
+                    md.mkdir();
+                    for(File marketfile : marketfiles){
+                        try {
+                            Files.move(marketfile.toPath(),Paths.get(d.getAbsolutePath()+"/"+marketfile.getName()),StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);
+                        } catch (IOException ex) {
+                            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                }
+                packageNodesRecursively(nodefile, nodesdir, marketsdir);
+            }
+        }
+    }
+    
     private <T> T readObjectFromFile(Class<T> type, String path){
         T obj = null;
         try(ObjectInputStream oi = new ObjectInputStream(Files.newInputStream(Paths.get(path)));){
