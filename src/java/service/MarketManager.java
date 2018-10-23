@@ -9,12 +9,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
 import javax.ejb.Singleton;
 import javax.inject.Inject;
 import trading.Market;
@@ -27,42 +30,46 @@ import trading.MarketNode;
 @Singleton
 public class MarketManager {
     
-    private Map<String,List<List<MarketNode>>> nodeMap_alphabet;
-    private Map<String,List<List<Market>>> marketMap_alphabet;
-    public MarketManager(){
-        File marketsdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets").toFile();
-    }
-    
+    private Map<String,HashMap<String,List<MarketNode>>> nodeMap_alphabet;
+    private Map<String,HashMap<String,List<Market>>> marketMap_alphabet;
     @Inject
-    public String loadNodes(FilesManager fs){
-//        File nodesdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation").toFile();
+    FilesManager fs;
+    
+    @PostConstruct
+    public void loadNodes(){
+        File nodesdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation").toFile();
         File marketsdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets").toFile();
-//        File rootNode = Paths.get("C:/GitRepositories/IgTrading/marketNavigation/topNodes.ig").toFile();
         
-//        Map<String,MarketNode> nodemap = new HashMap<>();
+        nodeMap_alphabet = new HashMap<>();
+        marketMap_alphabet = new HashMap<>();
         Map<String,List<File>> marketmap;
+        Map<String,List<File>> nodemap;
         String abc = "abcdefghijklmnopqrstuvwxyz";
-        Arrays.stream(marketsdir.listFiles()).filter(f->f.isDirectory()).forEach(d->{if(!d.delete()){d.deleteOnExit();}});
-        marketmap=Arrays.stream(marketsdir.listFiles())
+        marketmap=Arrays.stream(marketsdir.listFiles()).flatMap(d->Arrays.stream(d.listFiles()))
         .filter(f->f.isFile()&&f.getName().endsWith(".mkt")).collect(Collectors.groupingBy(t->{
             String name = t.getName();
             return Arrays.stream(name.split("")).filter(c->abc.contains(c.toLowerCase())).findFirst().get();
         }));
         marketmap.forEach((k,v)->{
+            HashMap<String,List<Market>> ml = new HashMap<>();
             v.forEach(file->{
-                try {
-                    Files.createDirectories(Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets"+"/"+k));
-                    Files.move(file.toPath(), Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets"+"/"+k+"/"+file.getName()));
-                } catch (IOException ex) {
-                    Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                List<Market> m = (List<Market>)fs.readObjectFromFile(ArrayList.class, marketsdir.getAbsolutePath()+"/"+k);
+                ml.put(file.getName().split(".mkt")[0], m);
             });
+            marketMap_alphabet.put(k, ml);
         });
-        try {
-            Files.deleteIfExists(Paths.get(marketsdir.getAbsolutePath()+"/"+"MarketMap"));
-        } catch (IOException ex) {
-            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return "Markets organized "+marketmap.entrySet().size();
+        nodemap=Arrays.stream(nodesdir.listFiles())
+        .filter(f->f.isFile()&&f.getName().endsWith(".ig")).collect(Collectors.groupingBy(t->{
+            String name = t.getName();
+            return Arrays.stream(name.split("")).filter(c->abc.contains(c.toLowerCase())).findFirst().get().toUpperCase();
+        }));
+        nodemap.forEach((k,v)->{
+            HashMap<String,List<MarketNode>> ml = new HashMap<>();
+            v.forEach(file->{
+                List<MarketNode> m = (List<MarketNode>)fs.readObjectFromFile(ArrayList.class, nodesdir.getAbsolutePath()+"/"+k);
+                ml.put(file.getName().split(".ig")[0], m);
+            });
+            nodeMap_alphabet.put(k, ml);
+        });
     }
 }
