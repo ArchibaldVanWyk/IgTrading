@@ -20,7 +20,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -193,9 +195,7 @@ public class IgAccessService {
             Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    @GET
-    @Path("marketnavigation")
-    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    
     public String packageNodes(String dirpath){
         File nodesdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation").toFile();
         File marketsdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets").toFile();
@@ -254,6 +254,43 @@ public class IgAccessService {
             }
         }
     }
+    @GET
+    @Path("marketnavigationx")
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String manageMarkets(){
+//        File nodesdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation").toFile();
+        File marketsdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets").toFile();
+//        File rootNode = Paths.get("C:/GitRepositories/IgTrading/marketNavigation/topNodes.ig").toFile();
+        
+//        Map<String,MarketNode> nodemap = new HashMap<>();
+        Map<String,List<File>> marketmap;
+        Arrays.stream(marketsdir.listFiles()).filter(f->f.isDirectory()).forEach(d->{if(!d.delete()){d.deleteOnExit();}});
+        marketmap=Arrays.stream(marketsdir.listFiles())
+        .filter(f->f.isFile()&&f.getName().endsWith(".mkt")).collect(Collectors.groupingBy(t->{
+            String[] s = t.getName().split("[.]");
+            String name = s[0];
+            return name;
+        }));
+        marketmap.forEach((k,v)->{
+            v.forEach(file->{
+                try {
+                    
+                    Files.move(file.toPath(), Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets"+"/"+k+"/"+file.getName()), StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException ex) {
+                    Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            });
+        });
+        try {
+            Files.deleteIfExists(Paths.get(marketsdir.getAbsolutePath()+"/"+"MarketMap"));
+        } catch (IOException ex) {
+            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        saveOjectLocally(marketmap, marketsdir.getAbsolutePath()+"/"+"MarketMap");
+        return "Markets organized "+marketmap.entrySet().size();
+    }
+    
+    
     
     private <T> T readObjectFromFile(Class<T> type, String path){
         T obj = null;
