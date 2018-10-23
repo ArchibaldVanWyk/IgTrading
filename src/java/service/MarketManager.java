@@ -6,16 +6,12 @@
 package service;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.ejb.Singleton;
@@ -71,5 +67,16 @@ public class MarketManager {
             });
             nodeMap_alphabet.put(k, ml);
         });
+        
+        
+        
+    }
+
+    public Map<String, HashMap<String, List<MarketNode>>> getNodeMap_alphabet() {
+        return nodeMap_alphabet;
+    }
+
+    public Map<String, HashMap<String, List<Market>>> getMarketMap_alphabet() {
+        return marketMap_alphabet;
     }
 }

@@ -30,6 +30,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 import javax.persistence.EntityManager;
@@ -68,6 +69,7 @@ public class IgAccessService {
     @Inject ConnectionManager cm;
     @Inject SessionManager sm;
     @Inject FilesManager fs;
+    @Inject MarketManager mm;
     @PersistenceContext(unitName = "IgTradingPU")
     private EntityManager em;
     private int num_of_markets=0;
@@ -104,6 +106,8 @@ public class IgAccessService {
         String json=cm.createConnection(method,endpoint,null);
         return sm.retrieveSession(Json.createReader(new StringReader(json)).readObject());
     }
+    
+    
     
 //    public String getEncryptionKey(){
 //        String endpoint ="/session/encryptionKey";
@@ -290,15 +294,24 @@ public class IgAccessService {
     }
     
     @GET
-    @Path("nodeInfo/{id}")
+    @Path("nodes/{name}")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
-    public String nodeInfo(@QueryParam("id") String id){
+    public String findNode(@QueryParam("name") String name){
         
         
         
         return null;
     }
     
+    @GET
+    @Path("nodes")
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String nodes(){
+        List<MarketNode> nodes = mm.getNodeMap_alphabet().get("T").get("topNodes");
+        JsonArrayBuilder builder = Json.createArrayBuilder();
+        nodes.forEach(n->builder.add(n.getName()+":"+n.getId()));
+        return builder.build().toString();
+    }
     
     
     @GET
