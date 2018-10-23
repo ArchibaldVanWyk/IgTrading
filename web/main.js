@@ -11,6 +11,7 @@ var ig = (function(){
     let tokenUrl = "webresources/rest/token";
     let accountsUrl = "webresources/rest/account";
     let positionsUrl = "webresources/rest/positions";
+    let nodesUrl = "webresources/rest/nodes";
     return{
         getFace:function(){
 
@@ -82,6 +83,13 @@ var ig = (function(){
             let req = this.getXHR("GET",positionsUrl,(xhr)=>{
                 out.innerHTML=(xhr.responseText||xhr.responseXML||"no response");
                
+            });
+            req.send(null);
+        },
+        nodes:function(){
+            let out = document.getElementById("output");
+            let req = this.getXHR("GET",nodesUrl,(xhr)=>{
+                out.innerHTML=(xhr.responseText||xhr.responseXML||"no response");
             });
             req.send(null);
         }
