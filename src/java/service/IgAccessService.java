@@ -39,6 +39,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import trading.Currency;
 import trading.Deal;
@@ -66,6 +67,7 @@ public class IgAccessService {
     @Inject Framework fw;
     @Inject ConnectionManager cm;
     @Inject SessionManager sm;
+    @Inject FilesManager fs;
     @PersistenceContext(unitName = "IgTradingPU")
     private EntityManager em;
     private int num_of_markets=0;
@@ -135,11 +137,11 @@ public class IgAccessService {
         try{
             markets = parseMarketList(json,nodeId);
             if(markets!=null){
-              saveOjectLocally(markets, "C:/GitRepositories/IgTrading/marketnavigation/markets/nullMkt.mkt");  
+                fs.saveOjectLocally(markets, "C:/GitRepositories/IgTrading/marketnavigation/markets/nullMkt.mkt");  
             }
             nodes = parseMarketNodes(json);
             if(nodes!=null){
-                saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketNavigation/topNodes.ig");
+                fs.saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketNavigation/topNodes.ig");
                 for(int i = 0;i<nodes.size();i++){
                     parseNodesRecursively(nodes.get(i), "/marketnavigation"+"/"+nodes.get(i).getId());
                 }
@@ -171,11 +173,11 @@ public class IgAccessService {
             if(markets!=null){
                 node.setMarkets(markets);
                 String marketname = node.getName().replace("/", ".").replace("\\", ".");
-                saveOjectLocally(markets, "C:/GitRepositories/IgTrading/marketnavigation/markets/"+marketname+"."+node.getId()+".mkt");
+                fs.saveOjectLocally(markets, "C:/GitRepositories/IgTrading/marketnavigation/markets/"+marketname+"."+node.getId()+".mkt");
             }
             if(nodes!=null){
                 String nodename = node.getName().replace("/", ".").replace("\\", ".");
-                saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketnavigation/"+nodename+"."+node.getId()+".ig");
+                fs.saveOjectLocally(nodes, "C:/GitRepositories/IgTrading/marketnavigation/"+nodename+"."+node.getId()+".ig");
                 node.setNodes(nodes);
                 for(int i = 0;i<nodes.size();i++){
                     parseNodesRecursively(nodes.get(i), "/marketnavigation/"+nodes.get(i).getId());
@@ -187,14 +189,7 @@ public class IgAccessService {
         }
     }
     
-    private void saveOjectLocally(Object obj,String path){
-        try(ObjectOutputStream oo = new ObjectOutputStream(Files.newOutputStream(Paths.get(path)));){
-            oo.writeObject(obj);
-        } 
-        catch (IOException ex) {
-            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
+
     
     public String packageNodes(String dirpath){
         File nodesdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation").toFile();
@@ -205,7 +200,7 @@ public class IgAccessService {
     }
     
     private void packageNodesRecursively(File root,File nodesdir,File marketsdir){
-        List<MarketNode> subNodes = (List<MarketNode>)readObjectFromFile(ArrayList.class, root.getAbsolutePath());
+        List<MarketNode> subNodes = (List<MarketNode>)fs.readObjectFromFile(ArrayList.class, root.getAbsolutePath());
         //List<Market> nodeMarkets = rootNode.getMarkets();
         List<String> subNodeIds = subNodes!=null&&subNodes.size()>0?subNodes.stream().map(n->n.getId()).collect(Collectors.toList()):null;
         //List<String> mktNodeIds = nodeMarkets!=null&&nodeMarkets.size()>0?nodeMarkets.stream().map(m->m.getNodeId()).collect(Collectors.toList()):null;
@@ -255,7 +250,7 @@ public class IgAccessService {
         }
     }
     @GET
-    @Path("marketnavigationx")
+    @Path("marketnavigation1")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String manageMarkets(){
 //        File nodesdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation").toFile();
@@ -264,18 +259,19 @@ public class IgAccessService {
         
 //        Map<String,MarketNode> nodemap = new HashMap<>();
         Map<String,List<File>> marketmap;
+        String abc = "abcdefghijklmnopqrstuvwxyz";
         Arrays.stream(marketsdir.listFiles()).filter(f->f.isDirectory()).forEach(d->{if(!d.delete()){d.deleteOnExit();}});
         marketmap=Arrays.stream(marketsdir.listFiles())
         .filter(f->f.isFile()&&f.getName().endsWith(".mkt")).collect(Collectors.groupingBy(t->{
-            String[] s = t.getName().split("[.]");
-            String name = s[0];
-            return name;
+            
+            String name = t.getName();
+            return Arrays.stream(name.split("")).filter(c->abc.contains(c.toLowerCase())).findFirst().get();
         }));
         marketmap.forEach((k,v)->{
             v.forEach(file->{
                 try {
-                    
-                    Files.move(file.toPath(), Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets"+"/"+k+"/"+file.getName()), StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);
+                    Files.createDirectories(Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets"+"/"+k));
+                    Files.move(file.toPath(), Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets"+"/"+k+"/"+file.getName()));
                 } catch (IOException ex) {
                     Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -286,22 +282,24 @@ public class IgAccessService {
         } catch (IOException ex) {
             Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
         }
-        saveOjectLocally(marketmap, marketsdir.getAbsolutePath()+"/"+"MarketMap");
         return "Markets organized "+marketmap.entrySet().size();
     }
     
-    
-    
-    private <T> T readObjectFromFile(Class<T> type, String path){
-        T obj = null;
-        try(ObjectInputStream oi = new ObjectInputStream(Files.newInputStream(Paths.get(path)));){
-            obj = type.cast(oi.readObject());
-        } 
-        catch (IOException | ClassNotFoundException ex) {
-            Logger.getLogger(IgAccessService.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return obj;
+    public String marketInfo(String id){
+        return null;
     }
+    
+    @GET
+    @Path("nodeInfo/{id}")
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String nodeInfo(@QueryParam("id") String id){
+        
+        
+        
+        return null;
+    }
+    
+    
     
     @GET
     @Path("token")
