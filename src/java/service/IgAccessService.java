@@ -297,10 +297,13 @@ public class IgAccessService {
     @Path("nodes/{name}")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String findNode(@QueryParam("name") String name){
-        
-        
-        
-        return null;
+        String abc = "abcdefghijklmnopqrstuvwxyz";
+        Map<String,HashMap<String,List<MarketNode>>> nodes = mm.getNodeMap_alphabet();
+        String l = Arrays.stream(name.split("")).filter(c->abc.contains(c)).findFirst().get();
+        List<MarketNode> nodelist = nodes.get(l).get(name);
+        JsonArrayBuilder builder = Json.createArrayBuilder();
+        nodelist.forEach(n->builder.add(n.getName()+":"+n.getId()));
+        return builder.build().toString();
     }
     
     @GET
