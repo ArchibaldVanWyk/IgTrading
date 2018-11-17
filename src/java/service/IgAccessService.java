@@ -310,10 +310,20 @@ public class IgAccessService {
     @Path("nodes")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String nodes(){
-        List<MarketNode> nodes = mm.getNodeMap_alphabet().get("T").get("topNodes");
-        JsonArrayBuilder builder = Json.createArrayBuilder();
-        nodes.forEach(n->builder.add(n.getName()+":"+n.getId()));
-        return builder.build().toString();
+        List<MarketNode> nodes;
+        try{
+            nodes = mm.getNodeMap_alphabet().get("T").get("topNodes");
+        }catch(Exception e){
+            return "busy";
+        }
+        if(nodes!=null){
+            JsonArrayBuilder builder = Json.createArrayBuilder();
+            nodes.forEach(n->builder.add(n.getName()+":"+n.getId()));
+            return builder.build().toString();
+        }
+        else{
+            return "busy";
+        }
     }
     
     

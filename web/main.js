@@ -12,7 +12,9 @@ var ig = (function(){
     let accountsUrl = "webresources/rest/account";
     let positionsUrl = "webresources/rest/positions";
     let nodesUrl = "webresources/rest/nodes";
+    let s = "";
     return{
+        s,
         getFace:function(){
 
             window.open("hello.html",'_self');
@@ -34,7 +36,7 @@ var ig = (function(){
             xhr.open(method,url);
             return xhr;
         },
-        login:function(){
+        login:function(){console.log("logon");
             let out = document.getElementById("output");
             let req = this.getXHR("POST",loginUrl,(xhr)=>{
                 out.innerHTML=xhr.responseText||xhr.responseXML||"no response"+xhr.getAllResponseHeaders().toString();;
@@ -62,12 +64,13 @@ var ig = (function(){
             let json = {"identifier":"igtrading","password":"IgTrading1"};
             req.send(null);
         },
-        token:function(){
+        token:function(){console.log("wtf");
             let out = document.getElementById("output");
-            let req = this.getXHR("GET",tokenUrl,(xhr)=>{
-                out.innerHTML=(xhr.responseText||xhr.responseXML||"no response");
+            let req = this.getXHR("GET",tokenUrl,(xhr)=>{alert("tokens");
+                //out.innerHTML=(xhr.responseText||xhr.responseXML||"no response");
+                out.innerHTML="trrg";
                
-            });
+            });console.log("wtf");
             req.send(null);
         },
         accounts:function(){
@@ -86,10 +89,19 @@ var ig = (function(){
             });
             req.send(null);
         },
-        nodes:function(){
+        nodes:function(){console.log("busy ");
             let out = document.getElementById("output");
-            let req = this.getXHR("GET",nodesUrl,(xhr)=>{
-                out.innerHTML=(xhr.responseText||xhr.responseXML||"no response");
+            let req = this.getXHR("GET",nodesUrl,(xhr)=>{console.log("busy "+ig.s);
+                if(xhr.responseText==="busy"){console.log("busy "+ig.s);
+                    setTimeout(()=>{
+                        ig.s+="...";console.log("busy "+ig.s);
+                        out.innerHTML=(xhr.responseText||xhr.responseXML||"no response")+ig.s;
+                        nodes();
+                    },1000);
+                }
+                else{console.log("busy "+ig.s);
+                    out.innerHTML=(xhr.responseText||xhr.responseXML||"no response")+ig.s;
+                }
             });
             req.send(null);
         }
