@@ -13,6 +13,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -33,6 +34,7 @@ import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
 import javax.json.JsonValue;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -52,6 +54,7 @@ import trading.Instrument.OpeningHours;
 import trading.InstrumentType;
 import trading.Market;
 import trading.MarketNode;
+import trading.MarketNodeInfo;
 import trading.MarketStatus;
 import trading.Position;
 import trading.Session;
@@ -352,7 +355,7 @@ public class IgAccessService {
     @Path("marketNode/{name}")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String marketNode(@PathParam("name") String name){
-        String result;
+        
         String[] mnode = mm.marketfiles(name);
         
         JsonArrayBuilder builder = Json.createArrayBuilder();
@@ -363,6 +366,18 @@ public class IgAccessService {
         
         return builder.build().toString();
     }
+    @GET
+    @Path("marketInfo/{id}")
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String getMarketInfo(@PathParam("id") String id){
+        
+        String jsonStr = cm.createConnection("GET", "/marketnavigation/"+id, null);
+        JsonReader jsReader = Json.createReader(new StringReader(jsonStr));
+        JsonObject json = jsReader.readObject();
+        MarketNodeInfo[] info = parseMarketNodeInfo(json);
+        return jsonStr;
+    }
+    
     
     
     @GET
@@ -457,6 +472,44 @@ public class IgAccessService {
         node.setId(json.getString("id"));
         node.setName(json.getString("name"));
         return node;
+    }
+    
+    private MarketNodeInfo[] parseMarketNodeInfo(JsonObject json){
+        MarketNodeInfo[] arr;
+        JsonArray jsa = json.getJsonArray("markets");
+        boolean isNull = jsa.getValueType().equals(JsonValue.ValueType.NULL);
+        if(!isNull){
+            arr = new MarketNodeInfo[jsa.size()];
+            for(int i = 0; i<arr.length;i++){
+                MarketNodeInfo mi = new MarketNodeInfo();
+                JsonObject obj = jsa.getJsonObject(i);
+                mi.setBid(obj.getJsonNumber("bid").doubleValue());
+                mi.setDelayTime(obj.getJsonNumber("delayTime").doubleValue());
+                mi.setEpic(obj.getString("epic"));
+                mi.setExpiry(obj.getString("expiry"));
+                mi.setHigh(obj.getJsonNumber("high").doubleValue());
+                //mi.setId(obj.getString("epic"));
+                mi.setInstrumentName(obj.getString("instrumentName"));
+                mi.setInstrumentType(InstrumentType.valueOf(obj.getString("instrumentType")));
+                mi.setLotSize(obj.getJsonNumber("lotSize").doubleValue());
+                mi.setLow(obj.getJsonNumber("low").doubleValue());
+                mi.setMarketStatus(MarketStatus.valueOf(obj.getString("marketStatus")));
+                mi.setNetChange(obj.getJsonNumber("netChange").doubleValue());
+                mi.setOffer(obj.getJsonNumber("offer").doubleValue());
+                mi.setOtcTradeable(obj.getBoolean("otcTradeable"));
+                mi.setPercentageChange(obj.getJsonNumber("percentageChange").doubleValue());
+                mi.setScalingFactor(obj.getJsonNumber("scalingFactor").doubleValue());
+                mi.setStreamingPricesAvailable(obj.getBoolean("streamingPricesAvailable"));
+                mi.setUpdateTime(obj.getString("updateTime"));
+                mi.setUpdateTimeUTC(obj.getString("updateTimeUTC"));
+                arr[i] = mi;
+            }
+            return arr;
+        }
+        else{
+           return null; 
+        }
+        
     }
     
     private Market parseMarket(JsonObject json, String nodeId){

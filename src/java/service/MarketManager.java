@@ -93,7 +93,7 @@ public class MarketManager {
         if(nodemap==null){return null;}
         List<MarketNode> m = (List<MarketNode>)fs
         .readObjectFromFile(ArrayList.class,nodemap.get(letter).stream()
-            .filter(f->f.getName().split(".ig")[0].equals(name))
+            .filter(f->f.getName().contains(name.split("[.]")[0]))
             .findFirst()
             .get()
             .getAbsolutePath());
@@ -105,7 +105,7 @@ public class MarketManager {
         if(marketmap==null){return null;}
         List<Market> m = (List<Market>)fs
         .readObjectFromFile(ArrayList.class,marketmap.get(letter).stream()
-            .filter(f->f.getName().split(".mkt")[0].equals(name.split(":")[0]))
+            .filter(f->f.getName().split(".mkt")[0].contains(name.split("[.]")[0]))
             .findFirst()
             .get()
             .getAbsolutePath());

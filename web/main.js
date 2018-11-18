@@ -14,9 +14,11 @@ var ig = (function(){
     let nodesUrl = "webresources/rest/nodes";
     let nodesNamesUrl = "webresources/rest/nodeFilenames";
     let marketNodesNamesUrl = "webresources/rest/marketNode";
+    let marketsUrl = "webresources/rest/marketInfo";
     let s = "";
     let c = 0;
     let alpha="A";
+    let mktChar="A";
     let getXHR=function(method,url,callback){
         let xhr = new XMLHttpRequest();
 
@@ -48,7 +50,7 @@ var ig = (function(){
         r.send(null);
     };
     return{
-        s,c,getXHR,alpha,
+        s,c,getXHR,alpha,mktChar,
         getFace:function(){
             
             window.open("hello.html",'_self');
@@ -120,7 +122,6 @@ var ig = (function(){
                     for(let i=0;i<json.length;i++){
                         opt = document.createElement("option");
                         opt.innerHTML = json[i];
-//                        opt.onclick  = ()=>ig.marketNodes(json[i]);
                         out.appendChild(opt);
                     }
                 });
@@ -129,22 +130,25 @@ var ig = (function(){
             else{
                 if(document.getElementById('marketsCheckbox').checked){
                     ig.marketNodes(letter);
+                    mktChar=letter;
                 }
                 if(document.getElementById('nodesCheckbox').checked){
                     nodeFilenames(letter);
+                    alpha=letter;
                 }
             }
         },
-        marketNodes:function(name){
+        marketNodes:function(letter){
             let out = document.getElementById("marketNodes");
-            if(name!==null){
-                let req = getXHR("GET",marketNodesNamesUrl+"/"+name,(xhr)=>{
+            if(letter!==null){
+                let req = getXHR("GET",marketNodesNamesUrl+"/"+letter,(xhr)=>{
                     let json = JSON.parse(xhr.responseText);
                     let opt;
                     out.innerHTML="";
                     for(let i=0;i<json.length;i++){
                         opt = document.createElement("option");
                         opt.innerHTML = json[i];
+                        opt.onclick = ()=>ig.markets(json[i]);
                         out.appendChild(opt);
                     }
                 });
@@ -153,6 +157,17 @@ var ig = (function(){
             else{
                 out.innerHTML="none";
             }
+        },
+        markets:function(name){
+            let out = document.getElementById("output");
+            if(name!==null){
+                let req = getXHR("GET",marketsUrl+"/"+name.split(".")[1],(xhr)=>{
+                    
+                    out.innerHTML=xhr.responseText;
+                });
+                req.send(null);
+            }
+            
         }
     };
 })();
