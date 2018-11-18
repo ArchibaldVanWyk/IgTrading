@@ -39,7 +39,7 @@ var ig = (function(){
             for(let i=0;i<json.length;i++){
                 opt = document.createElement("option");
                 opt.innerHTML = json[i];
-                opt.onclick = ()=>{ig.nodes(alpha,json[i]);};
+                opt.onclick= ()=>{ig.nodes(alpha,json[i]);};
                 fnames.appendChild(opt);
             }
             

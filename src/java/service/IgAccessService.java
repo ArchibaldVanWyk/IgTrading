@@ -348,6 +348,26 @@ public class IgAccessService {
         return result;
     }
     
+    @GET
+    @Path("marketNode/{name}")
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String marketNode(@PathParam("name") String name){
+        String result;
+        MarketNode mnode = mm.getMarketNode(name);
+        List<Market> markets = mnode.getMarkets();
+        List<MarketNode> nodes = mnode.getNodes();
+        if(markets==null||markets.isEmpty()){
+            JsonArrayBuilder builder = Json.createArrayBuilder();
+            nodes.forEach(n->builder.add(n.getName()+":"+n.getId()));
+            result = builder.build().toString();
+        }
+        else{
+            JsonArrayBuilder builder = Json.createArrayBuilder();
+            markets.forEach(n->builder.add(n.getInstrument().getName()+":"+n.getInstrument().getCountry()));
+            result = builder.build().toString();
+        }
+        return result;
+    }
     
     
     @GET

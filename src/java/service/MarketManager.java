@@ -36,6 +36,7 @@ public class MarketManager {
     private File marketsdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets").toFile();
     private Map<String,List<File>> marketmap;
     private Map<String,List<File>> nodemap;
+    private List<MarketNode> selectedNode;
     @Inject
     FilesManager fs;
     
@@ -94,8 +95,12 @@ public class MarketManager {
             .findFirst()
             .get()
             .getAbsolutePath());
-        
+        this.selectedNode = m;
         return m;
+    }
+    
+    public MarketNode getMarketNode(String name){
+        return this.selectedNode!=null?this.selectedNode.stream().filter(n->n.getName().equals(name)).findFirst().get():null;
     }
     
     private void loadFiles(){
