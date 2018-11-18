@@ -13,6 +13,7 @@ var ig = (function(){
     let positionsUrl = "webresources/rest/positions";
     let nodesUrl = "webresources/rest/nodes";
     let nodesNamesUrl = "webresources/rest/nodeFilenames";
+    let marketNodesNamesUrl = "webresources/rest/marketNode";
     let s = "";
     let c = 0;
     let alpha="A";
@@ -110,10 +111,34 @@ var ig = (function(){
         },
         nodes:function(letter,name){
             let out = document.getElementById("nodes");
-            
             alpha=letter;
             if(name!==null){
                 let req = getXHR("GET",nodesUrl+"/"+alpha+"/"+name,(xhr)=>{
+                    let json = JSON.parse(xhr.responseText);
+                    let opt;
+                    out.innerHTML="";
+                    for(let i=0;i<json.length;i++){
+                        opt = document.createElement("option");
+                        opt.innerHTML = json[i];
+//                        opt.onclick  = ()=>ig.marketNodes(json[i]);
+                        out.appendChild(opt);
+                    }
+                });
+                req.send(null);
+            }
+            else{
+                if(document.getElementById('marketsCheckbox').checked){
+                    ig.marketNodes(letter);
+                }
+                if(document.getElementById('nodesCheckbox').checked){
+                    nodeFilenames(letter);
+                }
+            }
+        },
+        marketNodes:function(name){
+            let out = document.getElementById("marketNodes");
+            if(name!==null){
+                let req = getXHR("GET",marketNodesNamesUrl+"/"+name,(xhr)=>{
                     let json = JSON.parse(xhr.responseText);
                     let opt;
                     out.innerHTML="";
@@ -126,7 +151,7 @@ var ig = (function(){
                 req.send(null);
             }
             else{
-                nodeFilenames(letter);
+                out.innerHTML="none";
             }
         }
     };

@@ -19,6 +19,8 @@ import javax.annotation.PostConstruct;
 import javax.ejb.DependsOn;
 import javax.ejb.Singleton;
 import javax.inject.Inject;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import trading.Market;
 import trading.MarketNode;
 
@@ -99,8 +101,15 @@ public class MarketManager {
         return m;
     }
     
-    public MarketNode getMarketNode(String name){
-        return this.selectedNode!=null?this.selectedNode.stream().filter(n->n.getName().equals(name)).findFirst().get():null;
+    public List<Market> getMarketNode(String letter,String name){
+        if(marketmap==null){return null;}
+        List<Market> m = (List<Market>)fs
+        .readObjectFromFile(ArrayList.class,marketmap.get(letter).stream()
+            .filter(f->f.getName().split(".mkt")[0].equals(name.split(":")[0]))
+            .findFirst()
+            .get()
+            .getAbsolutePath());
+        return m;
     }
     
     private void loadFiles(){
