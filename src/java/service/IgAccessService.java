@@ -311,17 +311,18 @@ public class IgAccessService {
     @GET
     @Path("nodes/{l}/{c}")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
-    @Consumes({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String nodes(@PathParam("l") String l,@PathParam("c") String c){
         List<MarketNode> nodes;
+        int numFiles;
         try{
+            numFiles = Integer.parseInt(mm.numberOfNodeFiles(l));
             nodes = mm.getNode(l,c);
         }catch(Exception e){
             return "busy";
         }
         if(nodes!=null){
             JsonArrayBuilder builder = Json.createArrayBuilder();
-            builder.add("size:"+nodes.size());
+            builder.add("size:"+numFiles);
             nodes.forEach(n->builder.add(n.getName()+":"+n.getId()));
             return builder.build().toString();
         }
@@ -329,6 +330,25 @@ public class IgAccessService {
             return "busy";
         }
     }
+    @GET
+    @Path("nodeFilenames/{l}")
+    @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String nodeFileNames(@PathParam("l") String l){
+        String[] fnames = mm.nodefiles(l);
+        String result;
+        if(fnames!=null){
+            JsonArrayBuilder builder = Json.createArrayBuilder();
+            for (String fname : fnames) {
+                builder.add(fname);
+            }
+            result = builder.build().toString();
+        }
+        else{
+            result = "Error retrieving names";
+        }
+        return result;
+    }
+    
     
     
     @GET

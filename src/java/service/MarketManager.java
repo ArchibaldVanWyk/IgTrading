@@ -45,7 +45,7 @@ public class MarketManager {
         marketmap=Arrays.stream(marketsdir.listFiles()).flatMap(d->Arrays.stream(d.listFiles()))
         .filter(f->f.isFile()&&f.getName().endsWith(".mkt")).collect(Collectors.groupingBy(t->{
             String name = t.getName();
-            return Arrays.stream(name.split("")).filter(c->abc.contains(c.toLowerCase())).findFirst().get();
+            return Arrays.stream(name.split("")).filter(c->abc.contains(c.toLowerCase())).findFirst().get().toUpperCase();
         }));
         nodemap=Arrays.stream(nodesdir.listFiles())
         .filter(f->f.isFile()&&f.getName().endsWith(".ig")).collect(Collectors.groupingBy(t->{
@@ -69,6 +69,21 @@ public class MarketManager {
         else{
             return "done"; 
         }
+    }
+    
+    public String numberOfNodeFiles(String k){
+        return nodemap.get(k).size()+"";
+    }
+    
+    public String numberOfMarketFiles(String k){
+        return marketmap.get(k).size()+"";
+    }
+    
+    public String[] nodefiles(String a){
+        return nodemap.get(a).stream().map(f->f.getName().split(".ig")[0]).collect(Collectors.toList()).toArray(new String[]{});
+    }
+    public String[] marketfiles(String a){
+        return marketmap.get(a).stream().map(f->f.getName().split(".mkt")[0]).collect(Collectors.toList()).toArray(new String[]{});
     }
     
     public List<MarketNode> getNode(String k,String c){

@@ -12,6 +12,7 @@ var ig = (function(){
     let accountsUrl = "webresources/rest/account";
     let positionsUrl = "webresources/rest/positions";
     let nodesUrl = "webresources/rest/nodes";
+    let nodesNamesUrl = "webresources/rest/nodeFilenames";
     let s = "";
     let c = 0;
     let getXHR=function(method,url,callback){
@@ -27,14 +28,30 @@ var ig = (function(){
         xhr.open(method,url);
         return xhr;
     };
-    let recur = function(c,count,out){
-        setTimeout((i,j,el)=>{
-            let r = getXHR("GET",nodesUrl+"/C/"+i,(req)=>{
+    let recur = function(a,c,count,out){
+        setTimeout((ch,i,j,el)=>{
+            let r = getXHR("GET",nodesUrl+"/"+ch+"/"+i,(req)=>{
                 el.innerHTML=el.innerHTML+req.responseText;
-                if(i<j)recur(++i,j,el);
+                if(i<j)recur(ch,++i,j,el);
             });
             r.send(null);
-        },1000,c,count,out);
+        },300,a,c,count,out);
+    };
+    let nodeFilenames = function(c){
+        let fnames = document.getElementById('fileNames');
+        fnames.innerHTML="";
+        let json;
+        let r = getXHR("GET",nodesNamesUrl+"/"+c,(xhr)=>{
+            json = JSON.parse(xhr.responseText);
+            let opt;console.log("adding opts len"+json.length);
+            for(let i=0;i<json.length;i++){
+                opt = document.createElement("option");console.log("option "+i);
+                opt.innerHTML = json[i];
+                fnames.appendChild(opt);
+            }
+            
+        });
+        r.send(null);
     };
     return{
         s,c,getXHR,
@@ -101,7 +118,7 @@ var ig = (function(){
         nodes:function(a,c){
             let out = document.getElementById("output");
             let count =0;
-            
+            if(count===0)nodeFilenames(a);
             let req = getXHR("GET",nodesUrl+"/"+a+"/"+(c===null?0:c),(xhr)=>{
                 if(xhr.responseText==="busy"){
                     setTimeout(()=>{
@@ -109,15 +126,16 @@ var ig = (function(){
                         ig.s+=".....";
                         if(ig.c>=10){ig.s="";ig.c=0;}
                         ig.c++;
-                        ig.nodes(a,null);
+//                        ig.nodes(a,null);
                     },1000);
                 }
                 else{
                     let json = JSON.parse(xhr.responseText);
                     count = parseInt(json[0].split(":")[1]);
                     out.innerHTML=JSON.stringify(json);
-                    let cc = 0;
-                    recur(cc,count,out);
+                    let cc = 1;
+                    recur(a,cc,count,out);
+                    
                     
                 }
             });
