@@ -15,6 +15,7 @@ var ig = (function(){
     let nodesNamesUrl = "webresources/rest/nodeFilenames";
     let s = "";
     let c = 0;
+    let alpha="A";
     let getXHR=function(method,url,callback){
         let xhr = new XMLHttpRequest();
 
@@ -28,25 +29,17 @@ var ig = (function(){
         xhr.open(method,url);
         return xhr;
     };
-    let recur = function(a,c,count,out){
-        setTimeout((ch,i,j,el)=>{
-            let r = getXHR("GET",nodesUrl+"/"+ch+"/"+i,(req)=>{
-                el.innerHTML=el.innerHTML+req.responseText;
-                if(i<j)recur(ch,++i,j,el);
-            });
-            r.send(null);
-        },300,a,c,count,out);
-    };
     let nodeFilenames = function(c){
         let fnames = document.getElementById('fileNames');
         fnames.innerHTML="";
         let json;
         let r = getXHR("GET",nodesNamesUrl+"/"+c,(xhr)=>{
             json = JSON.parse(xhr.responseText);
-            let opt;console.log("adding opts len"+json.length);
+            let opt;
             for(let i=0;i<json.length;i++){
-                opt = document.createElement("option");console.log("option "+i);
+                opt = document.createElement("option");
                 opt.innerHTML = json[i];
+                opt.onclick = ()=>{ig.nodes(alpha,json[i]);};
                 fnames.appendChild(opt);
             }
             
@@ -54,7 +47,7 @@ var ig = (function(){
         r.send(null);
     };
     return{
-        s,c,getXHR,
+        s,c,getXHR,alpha,
         getFace:function(){
             
             window.open("hello.html",'_self');
@@ -115,31 +108,26 @@ var ig = (function(){
             });
             req.send(null);
         },
-        nodes:function(a,c){
-            let out = document.getElementById("output");
-            let count =0;
-            if(count===0)nodeFilenames(a);
-            let req = getXHR("GET",nodesUrl+"/"+a+"/"+(c===null?0:c),(xhr)=>{
-                if(xhr.responseText==="busy"){
-                    setTimeout(()=>{
-                        out.innerHTML=(xhr.responseText||xhr.responseXML||"no response")+ig.s;
-                        ig.s+=".....";
-                        if(ig.c>=10){ig.s="";ig.c=0;}
-                        ig.c++;
-//                        ig.nodes(a,null);
-                    },1000);
-                }
-                else{
+        nodes:function(letter,name){
+            let out = document.getElementById("nodes");
+            
+            alpha=letter;
+            if(name!==null){
+                let req = getXHR("GET",nodesUrl+"/"+alpha+"/"+name,(xhr)=>{
                     let json = JSON.parse(xhr.responseText);
-                    count = parseInt(json[0].split(":")[1]);
-                    out.innerHTML=JSON.stringify(json);
-                    let cc = 1;
-                    recur(a,cc,count,out);
-                    
-                    
-                }
-            });
-            req.send(null);
+                    let opt;
+                    out.innerHTML="";
+                    for(let i=0;i<json.length;i++){
+                        opt = document.createElement("option");
+                        opt.innerHTML = json[i];
+                        out.appendChild(opt);
+                    }
+                });
+                req.send(null);
+            }
+            else{
+                nodeFilenames(letter);
+            }
         }
     };
 })();

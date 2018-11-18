@@ -309,20 +309,19 @@ public class IgAccessService {
     }
     
     @GET
-    @Path("nodes/{l}/{c}")
+    @Path("nodes/{letter}/{name}")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
-    public String nodes(@PathParam("l") String l,@PathParam("c") String c){
+    public String nodes(@PathParam("letter") String letter,@PathParam("name") String name){
         List<MarketNode> nodes;
         int numFiles;
         try{
-            numFiles = Integer.parseInt(mm.numberOfNodeFiles(l));
-            nodes = mm.getNode(l,c);
+            numFiles = Integer.parseInt(mm.numberOfNodeFiles(letter));
+            nodes = mm.getNode(letter,name);
         }catch(Exception e){
             return "busy";
         }
         if(nodes!=null){
             JsonArrayBuilder builder = Json.createArrayBuilder();
-            builder.add("size:"+numFiles);
             nodes.forEach(n->builder.add(n.getName()+":"+n.getId()));
             return builder.build().toString();
         }

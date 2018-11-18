@@ -86,9 +86,14 @@ public class MarketManager {
         return marketmap.get(a).stream().map(f->f.getName().split(".mkt")[0]).collect(Collectors.toList()).toArray(new String[]{});
     }
     
-    public List<MarketNode> getNode(String k,String c){
+    public List<MarketNode> getNode(String letter,String name){
         if(nodemap==null){return null;}
-        List<MarketNode> m = (List<MarketNode>)fs.readObjectFromFile(ArrayList.class, nodemap.get(k).get(Integer.parseInt(c)).getAbsolutePath());
+        List<MarketNode> m = (List<MarketNode>)fs
+        .readObjectFromFile(ArrayList.class,nodemap.get(letter).stream()
+            .filter(f->f.getName().split(".ig")[0].equals(name))
+            .findFirst()
+            .get()
+            .getAbsolutePath());
         
         return m;
     }
