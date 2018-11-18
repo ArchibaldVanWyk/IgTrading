@@ -32,6 +32,7 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -39,6 +40,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
@@ -307,17 +309,19 @@ public class IgAccessService {
     }
     
     @GET
-    @Path("nodes")
+    @Path("nodes/{l}/{c}")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
-    public String nodes(){
+    @Consumes({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
+    public String nodes(@PathParam("l") String l,@PathParam("c") String c){
         List<MarketNode> nodes;
         try{
-            nodes = mm.getNodeMap_alphabet().get("T").get("topNodes");
+            nodes = mm.getNode(l,c);
         }catch(Exception e){
             return "busy";
         }
         if(nodes!=null){
             JsonArrayBuilder builder = Json.createArrayBuilder();
+            builder.add("size:"+nodes.size());
             nodes.forEach(n->builder.add(n.getName()+":"+n.getId()));
             return builder.build().toString();
         }

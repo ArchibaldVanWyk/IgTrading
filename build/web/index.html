@@ -6,7 +6,7 @@ and open the template in the editor.
 -->
 <html>
     <head>
-        <title>TODO supply a title</title>
+        <title>IgTrading</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="main.js"></script>
@@ -15,47 +15,61 @@ and open the template in the editor.
         <div>TODO write content</div>
         <button onclick="ig.getFace()">Main Face</button><br/>
         <hr/>
-        <table>
-            <tr>
-                <td>Username:</td><td><input id='username' type="text" name="username" value="username" size="10" /></td>
-            </tr>
-            <tr>
-                <td>Password:</td><td><input id='password' type="password" name="password" value="password" size="10" /></td>
-            </tr>
-            <tr>
-                <td style="align-content: center">
-                    <input type="submit" value="LOG IN" name="login" onclick="ig.login()" style="width: 100%"/>
-                </td>
-                <td style="align-content: center">
-                    <input type="submit" value="LOG OUT" name="logout" onclick="ig.logout()" style="width: 100%"/>
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2">
-                    <input type="submit" value="Manage Markets" name="pack" onclick="ig.marketNav()" style="width: 100%"/>
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2">
-                    <input type="submit" value="Token" name="token" onclick="ig.token()" style="width: 100%"/>
-                </td>
-            </tr>
-            <tr>
-               <td colspan="2">
-                    <input type="submit" value="Accounts" name="accounts" onclick="ig.accounts()" style="width: 100%"/>
-                </td> 
-            </tr>
-            <tr>
-               <td colspan="2">
-                    <input type="submit" value="Positions" name="positons" onclick="ig.positions()" style="width: 100%"/>
-                </td> 
-            </tr>
-            <tr>
-               <td colspan="2">
-                    <input type="submit" value="Nodes" name="nodes" onclick="ig.nodes()" style="width: 100%"/>
-                </td> 
-            </tr>
-        </table>
-        <div id="output"></div>
+        <script>
+            let abc = "abcdefghijklmnopqrstuvwxqz".split("");
+            let s = "<div><table style='width:100%'><tr>";
+            let c = "";
+            for(let i=0;i<abc.length;i++){
+                c=abc[i].toUpperCase();
+                s=s.concat("<td><a style='cursor: pointer' "," onclick = ","ig.nodes(\"",c,"\",null",")"," >",c,"</a></td>");
+            }
+            s=s.concat("</tr></table></div>");
+            document.write(s);
+        </script>
+        <div id="inner">
+            <table style='float: left; '>
+                <tr>
+                    <td>Username:</td><td><input id='username' type="text" name="username" value="username" size="10" /></td>
+                </tr>
+                <tr>
+                    <td>Password:</td><td><input id='password' type="password" name="password" value="password" size="10" /></td>
+                </tr>
+                <tr>
+                    <td style="align-content: center">
+                        <input type="submit" value="LOG IN" name="login" onclick="ig.login()" style="width: 100%"/>
+                    </td>
+                    <td style="align-content: center">
+                        <input type="submit" value="LOG OUT" name="logout" onclick="ig.logout()" style="width: 100%"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <input type="submit" value="Manage Markets" name="pack" onclick="ig.marketNav()" style="width: 100%"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <input type="submit" value="Token" name="token" onclick="ig.token()" style="width: 100%"/>
+                    </td>
+                </tr>
+                <tr>
+                   <td colspan="2">
+                        <input type="submit" value="Accounts" name="accounts" onclick="ig.accounts()" style="width: 100%"/>
+                    </td> 
+                </tr>
+                <tr>
+                   <td colspan="2">
+                        <input type="submit" value="Positions" name="positons" onclick="ig.positions()" style="width: 100%"/>
+                    </td> 
+                </tr>
+                <tr>
+                   <td colspan="2">
+                        <input type="submit" value="Nodes" name="nodes" onclick="ig.nodes(null)" style="width: 100%"/>
+                    </td> 
+                </tr>
+            </table>
+            <div id="output" style="float: left"></div>
+        </div>
+        
     </body>
 </html>

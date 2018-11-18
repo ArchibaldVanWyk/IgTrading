@@ -19,7 +19,7 @@ import javax.enterprise.context.RequestScoped;
  *
  * @author Archie
  */
-@RequestScoped
+@Singleton
 public class FilesManager {
     
     

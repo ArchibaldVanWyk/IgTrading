@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
+import javax.ejb.DependsOn;
 import javax.ejb.Singleton;
 import javax.inject.Inject;
 import trading.Market;
@@ -26,17 +27,31 @@ import trading.MarketNode;
  * @author Archie
  */
 @Singleton
+@DependsOn("FilesManager")
 public class MarketManager {
     
     private Map<String,HashMap<String,List<MarketNode>>> nodeMap_alphabet;
     private Map<String,HashMap<String,List<Market>>> marketMap_alphabet;
+    private File nodesdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation").toFile();
+    private File marketsdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets").toFile();
+    private Map<String,List<File>> marketmap;
+    private Map<String,List<File>> nodemap;
     @Inject
     FilesManager fs;
     
-    @PostConstruct
-    public void init(){
-        Thread thr = new Thread(()->loadNodes());
-        thr.start();
+    public MarketManager(){
+        
+        String abc = "abcdefghijklmnopqrstuvwxyz";
+        marketmap=Arrays.stream(marketsdir.listFiles()).flatMap(d->Arrays.stream(d.listFiles()))
+        .filter(f->f.isFile()&&f.getName().endsWith(".mkt")).collect(Collectors.groupingBy(t->{
+            String name = t.getName();
+            return Arrays.stream(name.split("")).filter(c->abc.contains(c.toLowerCase())).findFirst().get();
+        }));
+        nodemap=Arrays.stream(nodesdir.listFiles())
+        .filter(f->f.isFile()&&f.getName().endsWith(".ig")).collect(Collectors.groupingBy(t->{
+            String name = t.getName();
+            return Arrays.stream(name.split("")).filter(c->abc.contains(c.toLowerCase())).findFirst().get().toUpperCase();
+        }));
     }
     
     public String loadStatus(){
@@ -56,15 +71,17 @@ public class MarketManager {
         }
     }
     
-    private void loadNodes(){
+    public List<MarketNode> getNode(String k,String c){
+        if(nodemap==null){return null;}
+        List<MarketNode> m = (List<MarketNode>)fs.readObjectFromFile(ArrayList.class, nodemap.get(k).get(Integer.parseInt(c)).getAbsolutePath());
+        
+        return m;
+    }
+    
+    private void loadFiles(){
         
         try{
-            File nodesdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation").toFile();
-            File marketsdir = Paths.get("C:/GitRepositories/IgTrading/marketNavigation/markets").toFile();
-            nodeMap_alphabet = new HashMap<>();
-            marketMap_alphabet = new HashMap<>();
-            Map<String,List<File>> marketmap;
-            Map<String,List<File>> nodemap;
+            
             String abc = "abcdefghijklmnopqrstuvwxyz";
             marketmap=Arrays.stream(marketsdir.listFiles()).flatMap(d->Arrays.stream(d.listFiles()))
             .filter(f->f.isFile()&&f.getName().endsWith(".mkt")).collect(Collectors.groupingBy(t->{
