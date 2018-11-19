@@ -161,7 +161,9 @@ var ig = (function(){
         markets:function(name){
             let out = document.getElementById("output");
             if(name!==null){
-                let req = getXHR("GET",marketsUrl+"/"+name.split(".")[1],(xhr)=>{
+                let sa = name.split(".");
+                sa=sa[sa.length-1];
+                let req = getXHR("GET",marketsUrl+"/"+sa,(xhr)=>{
                     
                     out.innerHTML=xhr.responseText;
                 });
