@@ -370,12 +370,15 @@ public class IgAccessService {
     @Path("marketInfo/{id}")
     @Produces({MediaType.APPLICATION_JSON,MediaType.TEXT_PLAIN})
     public String getMarketInfo(@PathParam("id") String id){
-        
         String jsonStr = cm.createConnection("GET", "/marketnavigation/"+id, null);
         JsonReader jsReader = Json.createReader(new StringReader(jsonStr));
         JsonObject json = jsReader.readObject();
         MarketNodeInfo[] info = parseMarketNodeInfo(json);
-        return jsonStr;
+        JsonArrayBuilder builder = Json.createArrayBuilder();
+        for (MarketNodeInfo info1 : info) {
+            builder.add(info1.getInstrumentName() + ":" + info1.getEpic());
+        }
+        return builder.build().toString();
     }
     
     
@@ -483,25 +486,43 @@ public class IgAccessService {
             for(int i = 0; i<arr.length;i++){
                 MarketNodeInfo mi = new MarketNodeInfo();
                 JsonObject obj = jsa.getJsonObject(i);
-                mi.setBid(obj.getJsonNumber("bid").doubleValue());
-                mi.setDelayTime(obj.getJsonNumber("delayTime").doubleValue());
-                mi.setEpic(obj.getString("epic"));
-                mi.setExpiry(obj.getString("expiry"));
-                mi.setHigh(obj.getJsonNumber("high").doubleValue());
+                Object o = jsonObjHelper(obj, "bid");
+                if(o!=null)mi.setBid((double)o);
+                o = jsonObjHelper(obj, "delayTime");
+                if(o!=null)mi.setDelayTime((double)o);
+                o = jsonObjHelper(obj, "epic");
+                mi.setEpic(o!=null?o+"":null);
+                o = jsonObjHelper(obj, "expiry");
+                mi.setExpiry(o!=null?o+"":"");
+                o = jsonObjHelper(obj, "high");
+                if(o!=null)mi.setHigh((double)o);
                 //mi.setId(obj.getString("epic"));
-                mi.setInstrumentName(obj.getString("instrumentName"));
-                mi.setInstrumentType(InstrumentType.valueOf(obj.getString("instrumentType")));
-                mi.setLotSize(obj.getJsonNumber("lotSize").doubleValue());
-                mi.setLow(obj.getJsonNumber("low").doubleValue());
-                mi.setMarketStatus(MarketStatus.valueOf(obj.getString("marketStatus")));
-                mi.setNetChange(obj.getJsonNumber("netChange").doubleValue());
-                mi.setOffer(obj.getJsonNumber("offer").doubleValue());
-                mi.setOtcTradeable(obj.getBoolean("otcTradeable"));
-                mi.setPercentageChange(obj.getJsonNumber("percentageChange").doubleValue());
-                mi.setScalingFactor(obj.getJsonNumber("scalingFactor").doubleValue());
-                mi.setStreamingPricesAvailable(obj.getBoolean("streamingPricesAvailable"));
-                mi.setUpdateTime(obj.getString("updateTime"));
-                mi.setUpdateTimeUTC(obj.getString("updateTimeUTC"));
+                o = jsonObjHelper(obj, "instrumentName");
+                mi.setInstrumentName(o!=null?o+"":"");
+                o = jsonObjHelper(obj, "instrumentType");
+                mi.setInstrumentType(InstrumentType.valueOf(o!=null?o+"":""));
+                o = jsonObjHelper(obj, "lotSize");
+                if(o!=null)mi.setLotSize((double)o);
+                o = jsonObjHelper(obj, "low");
+                if(o!=null)mi.setLow((double)o);
+                o = jsonObjHelper(obj, "marketStatus");
+                mi.setMarketStatus(MarketStatus.valueOf(o!=null?o+"":""));
+                o = jsonObjHelper(obj, "netChange");
+                if(o!=null)mi.setNetChange((double)o);
+                o = jsonObjHelper(obj, "offer");
+                if(o!=null)mi.setOffer((double)o);
+                o = jsonObjHelper(obj, "otcTradeable");
+                if(o!=null)mi.setOtcTradeable((boolean)o);
+                o = jsonObjHelper(obj, "percentageChange");
+                if(o!=null)mi.setPercentageChange((double)o);
+                o = jsonObjHelper(obj, "scalingFactor");
+                if(o!=null)mi.setScalingFactor((double)o);
+                o = jsonObjHelper(obj, "streamingPricesAvailable");
+                if(o!=null)mi.setStreamingPricesAvailable((boolean)o);
+                o = jsonObjHelper(obj, "updateTime");
+                mi.setUpdateTime(o!=null?o+"":"");
+                o = jsonObjHelper(obj, "updateTime");
+                mi.setUpdateTimeUTC(o!=null?o+"":"");
                 arr[i] = mi;
             }
             return arr;
@@ -697,6 +718,29 @@ public class IgAccessService {
     private DealingRules parseDealingRules(JsonObject dealingrules){
         
         return null;
+    }
+    
+    private Object jsonObjHelper(JsonObject json, String key){
+            Object value = null;
+        if(null != json.get(key).getValueType())switch (json.get(key).getValueType()) {
+            case NULL:
+                return null;
+            case ARRAY:
+                 return json.getJsonArray(key);
+            case STRING:
+                return json.getString(key);
+            case NUMBER:
+                return json.getJsonNumber(key).doubleValue();
+            case OBJECT:
+                return json.getJsonObject(key);
+            case TRUE:
+                return json.getBoolean(key);
+            case FALSE:
+                return json.getBoolean(key);
+            default:
+                return  null;
+        }
+        return value;
     }
     
 }
